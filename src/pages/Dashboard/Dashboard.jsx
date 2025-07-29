@@ -132,18 +132,21 @@ const fetchBookedDevices = useCallback(async () => {
     setLoading(true);
     const response = await axios.get("http://127.0.0.1:5000/api/booked-devices");
 
-    if (response.data.success) {
-      const booked = response.data.booked_devices || [];
-
+    const responseData = response.data
+    
+    if (responseData.success) {
+      const booked = responseData.data.booked_devices || [];
+     
       if (deviceIdParam && reservationIdParam) {
         const matchedDevice = booked.find(
           (dev) =>
-            dev.device_id === deviceIdParam &&
-            String(dev.reservation_id) === reservationIdParam
+            dev.device.id === deviceIdParam &&
+            String(dev.id) === reservationIdParam
         );
 
         if (matchedDevice) {
           setDeviceEndTime(new Date(matchedDevice.end_time));
+<<<<<<< HEAD
           const ipTypes = ipTypesParam
             ? ipTypesParam.split(",")
             : [
@@ -152,20 +155,62 @@ const fetchBookedDevices = useCallback(async () => {
                 "rutomatrix_os_ip", "rutomatrix_cmd_ip", "rutomatrix_audio_ip",
                 "rutomatrix_stream1_ip", "rutomatrix_stream2_ip", "rutomatrix_postcode_ip"
               ];
+=======
+          
+          // Get all available IP types from the device
+          const ipTypes = Object.keys(matchedDevice.device)
+            .filter(key => key.endsWith('_ip'))
+            .map(key => key);
+>>>>>>> 817b420f2a5b89f7db56f0934a95803ba6c3eea5
 
           const driverDevices = ipTypes.map((ipType) => {
             const driverInfo = driverTypes[ipType];
             return {
-              id: `${matchedDevice.device_id}_${ipType}`,
-              name: `${matchedDevice.device_name} - ${driverInfo.name}`,
+              id: `${matchedDevice.device.id}_${ipType}`,
+              name: `Device ${parseInt(matchedDevice.device.id)} - ${driverInfo.name}`,
               iconType: driverInfo.iconType,
               ipType,
+<<<<<<< HEAD
               ipAddress: matchedDevice.device_details[ipType] || matchedDevice.device_details.rutomatrix_ip,
+=======
+              ipAddress: matchedDevice.device[ipType],
+>>>>>>> 817b420f2a5b89f7db56f0934a95803ba6c3eea5
               reservationId: matchedDevice.reservation_id,
               deviceName: matchedDevice.device_name,
             };
           });
 
+<<<<<<< HEAD
+=======
+          // Add Rutomatrix sub-drivers if rutomatrix_ip exists
+          if (matchedDevice.device.rutomatrix_ip) {
+            const rutomatrixIp = matchedDevice.device.rutomatrix_ip;
+            const subDrivers = [
+              { name: "USB Over Network", endpoint: "usb", icon: "UsbIcon" },
+              { name: "System State Control", endpoint: "systemstate_atx", icon: "CpuIcon" },
+              { name: "Bias Flashing", endpoint: "bias", icon: "ZapIcon" },
+              { name: "OS Flashing", endpoint: "os", icon: "HardDriveIcon" },
+              { name: "Command Prompt", endpoint: "cmd", icon: "TerminalIcon" },
+              { name: "Audio Transmission", endpoint: "audio", icon: "Volume2Icon" },
+              { name: "Stream 1", endpoint: "stream1", icon: "VideoIcon" },
+              { name: "Stream 2", endpoint: "stream2", icon: "VideoIcon" },
+              { name: "Post Code Reading", endpoint: "post_code", icon: "CodeIcon" }
+            ];
+
+            subDrivers.forEach((driver) => {
+              driverDevices.push({
+                id: `${matchedDevice.device.id}_rutomatrix_${driver.endpoint}`,
+                name: `Device ${parseInt(matchedDevice.device.id)} - ${driver.name}`,
+                iconType: driver.icon,
+                ipType: `rutomatrix_${driver.endpoint}_ip`,
+                ipAddress: `${rutomatrixIp}/${driver.endpoint}`,
+                reservationId: matchedDevice.reservation_id,
+                deviceName: matchedDevice.device_name
+              });
+            });
+          }
+
+>>>>>>> 817b420f2a5b89f7db56f0934a95803ba6c3eea5
           setSelectedDevices(driverDevices);
           setDeviceIpMapping((prev) => {
             const newMapping = { ...prev };
@@ -175,7 +220,7 @@ const fetchBookedDevices = useCallback(async () => {
                 ip_address: driver.ipAddress,
                 reservation_id: driver.reservationId,
                 device_name: driver.deviceName,
-                device_details: matchedDevice.device_details,
+                device_details: matchedDevice.device,
               };
             });
             return newMapping;
@@ -328,8 +373,8 @@ const fetchBookedDevices = useCallback(async () => {
     const deviceName = ipInfo?.device_name || "";
     const title = `Rutomatrix &#x2022; ${deviceName} - ${ipType}`;
 
-    const isCT = ["CT1", "CT2", "CT3"].some((ct) => device.name.includes(ct));
-    const isPulse = ["Pulse1", "Pulse2", "Pulse3"].some((pulse) =>
+    const isCT = ["CT"].some((ct) => device.name.includes(ct));
+    const isPulse = ["Pulse"].some((pulse) =>
       device.name.includes(pulse)
     );
     const isPC = device.name.includes("PC");
