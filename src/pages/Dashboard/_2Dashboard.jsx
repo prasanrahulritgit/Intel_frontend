@@ -11,6 +11,14 @@ import {
   LayoutGrid,
   CircleUserRound,
   ExternalLink,
+  Usb,
+  Cpu,
+  Zap,
+  HardDrive,
+  Terminal,
+  Volume2,
+  Video,
+  Code
 } from "lucide-react";
 
 const DeviceCard = ({ device, isActive, onClick, renderIcon, isDarkTheme }) => {
@@ -87,16 +95,20 @@ const Dashboard = () => {
   const ipTypesParam = queryParams.get("ip_type");
   const reservationIdParam = queryParams.get("reservation");
 
-  const driverTypes = {
-    ct1_ip: { name: "CT1", iconType: "ThermoCamIcon" },
-    ct2_ip: { name: "CT2", iconType: "ThermoCamIcon" },
-    ct3_ip: { name: "CT3", iconType: "ThermoCamIcon" },
-    pc_ip: { name: "PC", iconType: "MonitorSmartphone" },
-    pulse1_ip: { name: "Pulse1", iconType: "ChartColumnStacked" },
-    pulse2_ip: { name: "Pulse2", iconType: "ChartColumnStacked" },
-    pulse3_ip: { name: "Pulse3", iconType: "ChartColumnStacked" },
-    rutomatrix_ip: { name: "Rutomatrix", iconType: "MonitorSmartphone" },
-  };
+const driverTypes = {
+  ct1_ip: { name: "CT", iconType: "ThermoCamIcon" },
+  pc_ip: { name: "PC", iconType: "MonitorSmartphone" },
+  pulse1_ip: { name: "Pulse", iconType: "ChartColumnStacked" },
+  rutomatrix_ip: { name: "USB Over Network", iconType: "UsbIcon" },
+  rutomatrix_system_ip: { name: "System State Control and ATX", iconType: "CpuIcon" },
+  rutomatrix_bias_ip: { name: "Bias flashing", iconType: "ZapIcon" },
+  rutomatrix_os_ip: { name: "OS Flashing", iconType: "HardDriveIcon" },
+  rutomatrix_cmd_ip: { name: "Command Prompt(serial)", iconType: "TerminalIcon" },
+  rutomatrix_audio_ip: { name: "Audio transmission", iconType: "Volume2Icon" },
+  rutomatrix_stream1_ip: { name: "stream1", iconType: "VideoIcon" },
+  rutomatrix_stream2_ip: { name: "stream2", iconType: "VideoIcon" },
+  rutomatrix_postcode_ip: { name: "Post Code reading", iconType: "CodeIcon" }
+};
 
   const userData = {
     name: "Admin User",
@@ -115,68 +127,71 @@ const Dashboard = () => {
     console.log(`Minimizing device ${deviceId}`);
   };
 
-  const fetchBookedDevices = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get(
-        "http://127.0.0.1:5000/api/booked-devices"
-      );
+const fetchBookedDevices = useCallback(async () => {
+  try {
+    setLoading(true);
+    const response = await axios.get("http://127.0.0.1:5000/api/booked-devices");
 
-      if (response.data.success) {
-        const booked = response.data.booked_devices || [];
+    if (response.data.success) {
+      const booked = response.data.booked_devices || [];
 
-        if (deviceIdParam && reservationIdParam) {
-          const matchedDevice = booked.find(
-            (dev) =>
-              dev.device_id === deviceIdParam &&
-              String(dev.reservation_id) === reservationIdParam
-          );
+      if (deviceIdParam && reservationIdParam) {
+        const matchedDevice = booked.find(
+          (dev) =>
+            dev.device_id === deviceIdParam &&
+            String(dev.reservation_id) === reservationIdParam
+        );
 
-          if (matchedDevice) {
-            setDeviceEndTime(new Date(matchedDevice.end_time)); // Set the end time
-            const ipTypes = ipTypesParam
-              ? ipTypesParam.split(",")
-              : matchedDevice.ip_type.split(",");
+        if (matchedDevice) {
+          setDeviceEndTime(new Date(matchedDevice.end_time));
+          const ipTypes = ipTypesParam
+            ? ipTypesParam.split(",")
+            : [
+                "ct1_ip", "pc_ip", "pulse1_ip", 
+                "rutomatrix_ip", "rutomatrix_system_ip", "rutomatrix_bias_ip",
+                "rutomatrix_os_ip", "rutomatrix_cmd_ip", "rutomatrix_audio_ip",
+                "rutomatrix_stream1_ip", "rutomatrix_stream2_ip", "rutomatrix_postcode_ip"
+              ];
 
-            const driverDevices = ipTypes.map((ipType) => {
-              const driverInfo = driverTypes[ipType];
-              return {
-                id: `${matchedDevice.device_id}_${ipType}`,
-                name: `${matchedDevice.device_name} - ${driverInfo.name}`,
-                iconType: driverInfo.iconType,
-                ipType,
-                ipAddress: matchedDevice.device_details[ipType],
-                reservationId: matchedDevice.reservation_id,
-                deviceName: matchedDevice.device_name,
+          const driverDevices = ipTypes.map((ipType) => {
+            const driverInfo = driverTypes[ipType];
+            return {
+              id: `${matchedDevice.device_id}_${ipType}`,
+              name: `${matchedDevice.device_name} - ${driverInfo.name}`,
+              iconType: driverInfo.iconType,
+              ipType,
+              ipAddress: matchedDevice.device_details[ipType] || matchedDevice.device_details.rutomatrix_ip,
+              reservationId: matchedDevice.reservation_id,
+              deviceName: matchedDevice.device_name,
+            };
+          });
+
+          setSelectedDevices(driverDevices);
+          setDeviceIpMapping((prev) => {
+            const newMapping = { ...prev };
+            driverDevices.forEach((driver) => {
+              newMapping[driver.id] = {
+                ip_type: driver.ipType,
+                ip_address: driver.ipAddress,
+                reservation_id: driver.reservationId,
+                device_name: driver.deviceName,
+                device_details: matchedDevice.device_details,
               };
             });
-
-            setSelectedDevices(driverDevices);
-            setDeviceIpMapping((prev) => {
-              const newMapping = { ...prev };
-              driverDevices.forEach((driver) => {
-                newMapping[driver.id] = {
-                  ip_type: driver.ipType,
-                  ip_address: driver.ipAddress,
-                  reservation_id: driver.reservationId,
-                  device_name: driver.deviceName,
-                  device_details: matchedDevice.device_details,
-                };
-              });
-              return newMapping;
-            });
-          } else {
-            setError("No matching booked device found");
-          }
+            return newMapping;
+          });
+        } else {
+          setError("No matching booked device found");
         }
       }
-      setLoading(false);
-    } catch (err) {
-      console.error("Error fetching booked devices:", err);
-      setError("Failed to fetch device information");
-      setLoading(false);
     }
-  }, []);
+    setLoading(false);
+  } catch (err) {
+    console.error("Error fetching booked devices:", err);
+    setError("Failed to fetch device information");
+    setLoading(false);
+  }
+}, []);
 
   useEffect(() => {
     fetchBookedDevices();
@@ -2217,28 +2232,38 @@ const Dashboard = () => {
                     openDeviceWindow(device.id, ipInfo);
                   }}
                   renderIcon={(type, color) => {
-                    switch (type) {
-                      case "MonitorSmartphone":
-                        return <MonitorSmartphone size={32} color={color} />;
-                      case "ChartColumnStacked":
-                        return <ChartColumnStacked size={32} color={color} />;
-                      case "ThermoCamIcon":
-                        return (
-                          <span
-                            style={{
-                              display: "flex",
-                              gap: "2px",
-                              alignItems: "center",
-                            }}
-                          >
-                            <ThermometerSun size={30} color={color} />
-                            <CameraIcon size={30} color={color} />
-                          </span>
-                        );
-                      default:
-                        return <MonitorSmartphone size={32} color={color} />;
-                    }
-                  }}
+                  switch (type) {
+                    case "MonitorSmartphone":
+                      return <MonitorSmartphone size={32} color={color} />;
+                    case "ChartColumnStacked":
+                      return <ChartColumnStacked size={32} color={color} />;
+                    case "ThermoCamIcon":
+                      return (
+                        <span style={{ display: "flex", gap: "2px", alignItems: "center" }}>
+                          <ThermometerSun size={30} color={color} />
+                          <CameraIcon size={30} color={color} />
+                        </span>
+                      );
+                    case "UsbIcon":
+                      return <Usb size={32} color={color} />;
+                    case "CpuIcon":
+                      return <Cpu size={32} color={color} />;
+                    case "ZapIcon":
+                      return <Zap size={32} color={color} />;
+                    case "HardDriveIcon":
+                      return <HardDrive size={32} color={color} />;
+                    case "TerminalIcon":
+                      return <Terminal size={32} color={color} />;
+                    case "Volume2Icon":
+                      return <Volume2 size={32} color={color} />;
+                    case "VideoIcon":
+                      return <Video size={32} color={color} />;
+                    case "CodeIcon":
+                      return <Code size={32} color={color} />;
+                    default:
+                      return <MonitorSmartphone size={32} color={color} />;
+                  }
+                }}
                   isDarkTheme={isDarkTheme}
                 />
               ))}

@@ -6,11 +6,13 @@ import "./Navbar.css";
 import { ChevronLeft, TimerIcon } from 'lucide-react'; 
 
 const Navbar = ({ isDarkTheme, toggleTheme, userData }) => {
+  // State and ref declarations
   const [timeLeft, setTimeLeft] = useState(null);
   const [deviceName, setDeviceName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isLast10Minutes, setIsLast10Minutes] = useState(false);
+  
   const timerRef = useRef(null);
   const alertShownRef = useRef({
     thirtyMinutes: false,
@@ -18,6 +20,7 @@ const Navbar = ({ isDarkTheme, toggleTheme, userData }) => {
     expired: false
   });
 
+  // Navigation handlers
   const handleBackToReservations = () => {
     window.location.href = "http://127.0.0.1:5000/reservations";
   };
@@ -30,51 +33,22 @@ const fetchDeviceData = async (deviceId) => {
   try {
     setIsLoading(true);
     setError(null);
-    
-    if (!deviceId) {
-      throw new Error('No device ID provided');
-    }
 
-    // Enhanced debug logging
-    console.log('Making authenticated request to /api/booked-devices');
-    console.log('Current cookies:', document.cookie);
-    console.log('Session storage:', sessionStorage);
-    console.log('Local storage:', localStorage);
-
-    const response = await axios.get('http://127.0.0.1:5000/api/booked-devices', {
-      withCredentials: true,
+    const token = localStorage.getItem('access_token');
+    const response = await fetch('http://127.0.0.1:5000/api/booked-devices', {
       headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest'
-      },
-      // Ensure axios doesn't try to parse HTML as JSON
-      transformResponse: [(data) => {
-        if (typeof data === 'string' && data.trim().startsWith('<!DOCTYPE html>')) {
-          throw new Error('Received HTML response when expecting JSON');
-        }
-        return data;
-      }]
+        Authorization: `Bearer ${token}`
+      }
     });
 
-    // Debug the actual response before parsing
-    console.log('API response headers:', response.headers);
-    console.log('API response content-type:', response.headers['content-type']);
-    console.log('API response data sample:', String(response.data).slice(0, 100));
-
-    // Force JSON parsing if needed
-    const responseData = typeof response.data === 'string' 
-      ? JSON.parse(response.data) 
-      : response.data;
-
-    if (!responseData?.data?.booked_devices) {
-      throw new Error('API returned invalid data structure');
+    if (!response.data?.success || !response.data?.data?.booked_devices) {
+      throw new Error('Failed to load device data');
     }
 
-    const device = responseData.data.booked_devices.find(d => 
+    const bookedDevices = response.data.data.booked_devices;
+    const device = bookedDevices.find(d => 
       d.device?.id === deviceId || 
-      d.id === deviceId.toString() || 
-      d.device_id === deviceId
+      d.id === deviceId.toString()
     );
 
     if (!device) {
@@ -82,25 +56,11 @@ const fetchDeviceData = async (deviceId) => {
     }
 
     return {
-      name: device.device?.id || device.id || 'Unknown Device',
-      endTime: new Date(device.time?.end || device.end_time)
+      name: `Device ${device.device?.id || device.id}`,
+      endTime: new Date(device.time?.end)
     };
-
   } catch (error) {
     console.error('API request failed:', error);
-    
-    // Handle specific error cases
-    if (error.message.includes('Received HTML response')) {
-      console.warn('Authentication required - redirecting to login');
-      window.location.href = `/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`;
-      return null;
-    }
-    
-    if (error.response?.status === 401) {
-      window.location.href = '/auth/login';
-      return null;
-    }
-    
     setError(error.message || 'Failed to load device data');
     return null;
   } finally {
@@ -108,6 +68,7 @@ const fetchDeviceData = async (deviceId) => {
   }
 };
 
+  // Alert and sound functions
   const playAlertSound = () => {
     try {
       const audio = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3');
@@ -130,6 +91,7 @@ const fetchDeviceData = async (deviceId) => {
     });
   };
 
+  // Countdown timer logic
   const startCountdown = (endTime, deviceName) => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -176,6 +138,7 @@ const fetchDeviceData = async (deviceId) => {
     }, 1000);
   };
 
+  // Effect for initializing and refreshing timer
   useEffect(() => {
     if (!userData?.device_id) {
       setError('No device selected');
@@ -203,6 +166,7 @@ const fetchDeviceData = async (deviceId) => {
     };
   }, [userData?.device_id]);
 
+  // Render component
   return (
     <div className={`navbar-container ${isDarkTheme ? "dark" : ""}`}>
       <header className="navbar1">

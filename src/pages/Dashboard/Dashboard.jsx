@@ -11,14 +11,14 @@ import {
   LayoutGrid,
   CircleUserRound,
   ExternalLink,
-  UsbIcon,
-  CpuIcon,
-  ZapIcon,
-  HardDriveIcon,
-  TerminalIcon,
-  Volume2Icon,
-  VideoIcon,
-  CodeIcon
+  Usb,
+  Cpu,
+  Zap,
+  HardDrive,
+  Terminal,
+  Volume2,
+  Video,
+  Code
 } from "lucide-react";
 
 const DeviceCard = ({ device, isActive, onClick, renderIcon, isDarkTheme }) => {
@@ -99,16 +99,15 @@ const driverTypes = {
   ct1_ip: { name: "CT", iconType: "ThermoCamIcon" },
   pc_ip: { name: "PC", iconType: "MonitorSmartphone" },
   pulse1_ip: { name: "Pulse", iconType: "ChartColumnStacked" },
-  usb_ip: { name: "USB Over Network", iconType: "UsbIcon" },
-  system_ip: { name: "System State Control", iconType: "CpuIcon" },
-  bias_ip: { name: "Bias Flashing", iconType: "ZapIcon" },
-  os_ip: { name: "OS Flashing", iconType: "HardDriveIcon" },
-  cmd_ip: { name: "Command Prompt", iconType: "TerminalIcon" },
-  audio_ip: { name: "Audio Transmission", iconType: "Volume2Icon" },
-  stream1_ip: { name: "Stream 1", iconType: "VideoIcon" },
-  stream2_ip: { name: "Stream 2", iconType: "VideoIcon" },
-  postcode_ip: { name: "Post Code Reading", iconType: "CodeIcon" },
-  rutomatrix_ip: { name: "Rutomatrix", iconType: "MonitorSmartphone" }
+  rutomatrix_ip: { name: "USB Over Network", iconType: "UsbIcon" },
+  rutomatrix_system_ip: { name: "System State Control and ATX", iconType: "CpuIcon" },
+  rutomatrix_bias_ip: { name: "Bias flashing", iconType: "ZapIcon" },
+  rutomatrix_os_ip: { name: "OS Flashing", iconType: "HardDriveIcon" },
+  rutomatrix_cmd_ip: { name: "Command Prompt(serial)", iconType: "TerminalIcon" },
+  rutomatrix_audio_ip: { name: "Audio transmission", iconType: "Volume2Icon" },
+  rutomatrix_stream1_ip: { name: "stream1", iconType: "VideoIcon" },
+  rutomatrix_stream2_ip: { name: "stream2", iconType: "VideoIcon" },
+  rutomatrix_postcode_ip: { name: "Post Code reading", iconType: "CodeIcon" }
 };
 
   const userData = {
@@ -145,56 +144,27 @@ const fetchBookedDevices = useCallback(async () => {
 
         if (matchedDevice) {
           setDeviceEndTime(new Date(matchedDevice.end_time));
-          
-          // Get all available IP types from the device
-          const ipTypes = Object.keys(matchedDevice.device_details)
-            .filter(key => key.endsWith('_ip'))
-            .map(key => key);
+          const ipTypes = ipTypesParam
+            ? ipTypesParam.split(",")
+            : [
+                "ct1_ip", "pc_ip", "pulse1_ip", 
+                "rutomatrix_ip", "rutomatrix_system_ip", "rutomatrix_bias_ip",
+                "rutomatrix_os_ip", "rutomatrix_cmd_ip", "rutomatrix_audio_ip",
+                "rutomatrix_stream1_ip", "rutomatrix_stream2_ip", "rutomatrix_postcode_ip"
+              ];
 
           const driverDevices = ipTypes.map((ipType) => {
-            const driverInfo = driverTypes[ipType] || { 
-              name: ipType.replace('_ip', ''), 
-              iconType: "MonitorSmartphone" 
-            };
-            
+            const driverInfo = driverTypes[ipType];
             return {
               id: `${matchedDevice.device_id}_${ipType}`,
               name: `${matchedDevice.device_name} - ${driverInfo.name}`,
               iconType: driverInfo.iconType,
               ipType,
-              ipAddress: matchedDevice.device_details[ipType],
+              ipAddress: matchedDevice.device_details[ipType] || matchedDevice.device_details.rutomatrix_ip,
               reservationId: matchedDevice.reservation_id,
               deviceName: matchedDevice.device_name,
             };
           });
-
-          // Add Rutomatrix sub-drivers if rutomatrix_ip exists
-          if (matchedDevice.device_details.rutomatrix_ip) {
-            const rutomatrixIp = matchedDevice.device_details.rutomatrix_ip;
-            const subDrivers = [
-              { name: "USB Over Network", endpoint: "usb", icon: "UsbIcon" },
-              { name: "System State Control", endpoint: "systemstate_atx", icon: "CpuIcon" },
-              { name: "Bias Flashing", endpoint: "bias", icon: "ZapIcon" },
-              { name: "OS Flashing", endpoint: "os", icon: "HardDriveIcon" },
-              { name: "Command Prompt", endpoint: "cmd", icon: "TerminalIcon" },
-              { name: "Audio Transmission", endpoint: "audio", icon: "Volume2Icon" },
-              { name: "Stream 1", endpoint: "stream1", icon: "VideoIcon" },
-              { name: "Stream 2", endpoint: "stream2", icon: "VideoIcon" },
-              { name: "Post Code Reading", endpoint: "post_code", icon: "CodeIcon" }
-            ];
-
-            subDrivers.forEach((driver) => {
-              driverDevices.push({
-                id: `${matchedDevice.device_id}_rutomatrix_${driver.endpoint}`,
-                name: `${matchedDevice.device_name} - ${driver.name}`,
-                iconType: driver.icon,
-                ipType: `rutomatrix_${driver.endpoint}_ip`,
-                ipAddress: `${rutomatrixIp}/${driver.endpoint}`,
-                reservationId: matchedDevice.reservation_id,
-                deviceName: matchedDevice.device_name
-              });
-            });
-          }
 
           setSelectedDevices(driverDevices);
           setDeviceIpMapping((prev) => {
@@ -221,7 +191,7 @@ const fetchBookedDevices = useCallback(async () => {
     setError("Failed to fetch device information");
     setLoading(false);
   }
-}, [deviceIdParam, reservationIdParam]);
+}, []);
 
   useEffect(() => {
     fetchBookedDevices();
@@ -612,23 +582,7 @@ const fetchBookedDevices = useCallback(async () => {
     height: 0;
     border-style: solid;
     cursor: pointer;
-    transition: transform 0.2s ease, filter 0.2s ease;
   }
-
-  /* Hover effect for all arrows */
-  .arrow:hover {
-    transform: scale(1.2);
-    filter: brightness(1.2);
-  }
-
-  /* Click effect (brief push-in animation) */
-/* Active class for keyboard-triggered highlight */
-.arrow.active {
-  transform: scale(0.95);
-  opacity: 1;
-  filter: brightness(1.4);
-  transition: transform 0.2s ease, filter 0.2s ease;
-}
 
   .arrow.up {
     border-width: 0 20px 20px 20px;
@@ -650,23 +604,12 @@ const fetchBookedDevices = useCallback(async () => {
     border-color: transparent transparent transparent #FF6A00;
   }
 
-  /* Center dot enhancements */
   .arrow.center {
     width: 20px;
     height: 20px;
     background-color: #FF6A00;
     border-radius: 50%;
     margin: auto;
-    transition: transform 0.2s ease, background-color 0.2s ease;
-  }
-
-  .arrow.center:hover {
-    transform: scale(1.2);
-    background-color: #ffa347;
-  }
-
-  .arrow.center:active {
-    transform: scale(0.9);
   }
 
   .angle-display {
@@ -1032,18 +975,16 @@ const fetchBookedDevices = useCallback(async () => {
 <script>
     document.addEventListener('DOMContentLoaded', () => {
       // API Endpoints
-      const startCameraAPI = "http://100.68.107.103:8000/start-camera";
-      const stopCameraAPI = "http://100.68.107.103:8000/stop-camera";
-      const startThermalAPI = "http://100.68.107.103:8000/start-thermal";
-      const stopThermalAPI = "http://100.68.107.103:8000/stop-thermal";
-      const cameraFeedAPI = "http://100.68.107.103:8001/camera.mjpg";
-      const thermalFeedAPI = "http://100.68.107.103:8002/thermal";
-      const cameraVerifiedAPI = "http://100.68.107.103:8001/camera_verified";
-      const thermalVerifiedAPI = "http://100.68.107.103:8002/thermal_verified";
-      const startServoAPI = "http://100.68.107.103:8000/start-servo";
-      const stopServoAPI = "http://100.68.107.103:8000/stop-servo";
-      const panel = document.getElementById('servo-panel');
-      const angleDisplay = document.getElementById('angle-display');
+      const startCameraAPI = "https://100.68.107.103:8000/start-camera";
+      const stopCameraAPI = "https://100.68.107.103:8000/stop-camera";
+      const startThermalAPI = "https://100.68.107.103:8000/start-thermal";
+      const stopThermalAPI = "https://100.68.107.103:8000/stop-thermal";
+      const cameraFeedAPI = "https://100.68.107.103:8001/camera.mjpg";
+      const thermalFeedAPI = "https://100.68.107.103:8002/thermal";
+      const cameraVerifiedAPI = "https://100.68.107.103:8001/camera_verified";
+      const thermalVerifiedAPI = "https://100.68.107.103:8002/thermal_verified";
+      const startServoAPI = "https://100.68.107.103:8000/start-servo";
+      const stopServoAPI = "https://100.68.107.103:8000/stop-servo";
 
       // DOM elements
       const cameraFeed = document.getElementById('camera-feed');
@@ -1053,8 +994,11 @@ const fetchBookedDevices = useCallback(async () => {
       const refreshBtn = document.getElementById('refresh-btn');
       const streamBtn = document.getElementById('stream-btn');
       const resetBtn = document.getElementById('reset-btn');
+      
       const toggleBtn = document.getElementById('servo-toggle-btn');
 
+      refreshBtn.disabled = true;
+      refreshBtn.style.backgroundColor = '#ff4444';
 
       // State variables
       let isCorsVerified = false;
@@ -1064,10 +1008,6 @@ const fetchBookedDevices = useCallback(async () => {
       // Initialize UI
       streamBtn.style.backgroundColor = '#ff4444';
       streamBtn.disabled = false;
-
-      refreshBtn.disabled = true;
-      refreshBtn.style.backgroundColor = '#ff4444';
-
 
       toggleBtn.addEventListener('click', () => {
         panel.classList.toggle('hidden');
@@ -1167,38 +1107,12 @@ const fetchBookedDevices = useCallback(async () => {
             testConnection(cameraVerifiedAPI),
             testConnection(thermalVerifiedAPI)
           ]);
-
-           resetBtn.addEventListener('click', async () => {
-        resetBtn.disabled = true;
-        resetBtn.textContent = 'Resetting...';
-
-        try {
-          const [stopCameraRes, stopThermalRes] = await Promise.all([
-            fetch(stopCameraAPI, { method: 'GET' }),
-            fetch(stopThermalAPI, { method: 'GET' })
-          ]);
-
-          if (stopCameraRes.ok && stopThermalRes.ok) {
-            showAlert('success', 'Reset completed successfully.');
-            resetBtn.classList.add('hidden'); // Hide button after successful reset
-          } else {
-            showAlert('error', 'Reset failed. Please check server.');
-          }
-        } catch (error) {
-          console.error('Reset failed:', error);
-          showAlert('error', 'Reset failed due to network error.');
-        } finally {
-          resetBtn.disabled = false;
-          resetBtn.textContent = 'Reset';
-        }
-      });
           
-      if (!cameraReachable || !thermalReachable) {
-        throw new Error('Servers unreachable: Camera ' + (cameraReachable ? 'OK' : 'DOWN') + 
-                      ', Thermal ' + (thermalReachable ? 'OK' : 'DOWN'));
-          resetBtn.classList.remove('hidden');  // Show Reset button
-      }
-
+          if (!cameraReachable || !thermalReachable) {
+            throw new Error('Servers unreachable: Camera ' + (cameraReachable ? 'OK' : 'DOWN') + 
+                          ', Thermal ' + (thermalReachable ? 'OK' : 'DOWN'));
+          }
+          
           // Then verify endpoints
           const [cameraResponse, thermalResponse] = await Promise.all([
             fetch(cameraVerifiedAPI, { 
@@ -1337,13 +1251,13 @@ const fetchBookedDevices = useCallback(async () => {
           cameraFeed.innerHTML = '<div class="feed-Placeholder">Camera feed stopped</div>';
           thermalFeed.innerHTML = '<div class="feed-Placeholder">Thermal feed stopped</div>';
           streamBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16"><path d="M16 16v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v4m4-4v16" fill="none" stroke="currentColor" stroke-width="2"/></svg> Start Stream';
-          isStreaming = false;       
-
+          isStreaming = false;
+          
         // Show alert depending on result
           if (servicesStopped) {
             showAlert('success', 'Stream stopped successfully');
           } else {
-            showAlert('warning', 'Stream stopped.');
+            showAlert('success', 'Stream stopped.');
           }
           
         } catch (error) {
@@ -1396,12 +1310,43 @@ const fetchBookedDevices = useCallback(async () => {
           setTimeout(() => document.body.removeChild(alertDiv), 500);
         }, 3000);
       }
-      
-    
-    //Servo Control Script
-    const SERVER = "http://100.68.107.103:8003";  //RPi backend URL
 
-    let servoRunning = false;   // Track state
+      if (!cameraReachable || !thermalReachable) {
+        resetBtn.classList.remove('hidden');  // Show Reset button
+        throw new Error('Servers unreachable: Camera ' + (cameraReachable ? 'OK' : 'DOWN') + 
+                      ', Thermal ' + (thermalReachable ? 'OK' : 'DOWN'));
+      }
+
+      resetBtn.addEventListener('click', async () => {
+      resetBtn.disabled = true;
+      resetBtn.textContent = 'Resetting...';
+
+      try {
+        const [stopCameraRes, stopThermalRes] = await Promise.all([
+          fetch(stopCameraAPI, { method: 'GET' }),
+          fetch(stopThermalAPI, { method: 'GET' })
+        ]);
+
+        if (stopCameraRes.ok && stopThermalRes.ok) {
+          showAlert('success', 'Reset completed successfully.');
+          resetBtn.classList.add('hidden'); // Hide button after successful reset
+        } else {
+          showAlert('error', 'Reset failed. Please check server.');
+        }
+      } catch (error) {
+        console.error('Reset failed:', error);
+        showAlert('error', 'Reset failed due to network error.');
+      } finally {
+        resetBtn.disabled = false;
+        resetBtn.textContent = 'Reset';
+      }
+    });
+
+
+    //Servo Control Script
+    const SERVER = "https://100.68.107.103:8003";  //RPi backend URL
+
+    let servoRunning = false;  // Track state
 
     const controlBtn = document.getElementById('servo-toggle-btn');
 
@@ -1423,6 +1368,9 @@ const fetchBookedDevices = useCallback(async () => {
           console.error('Error calling API:', error);
         });
     });
+
+    const panel = document.getElementById('servo-panel');
+    const angleDisplay = document.getElementById('angle-display');
 
     let verticalAngle = 90;
     let horizontalAngle = 90;
@@ -1477,7 +1425,7 @@ const fetchBookedDevices = useCallback(async () => {
         } else if (direction === 'center') {
           verticalAngle = 90;
           horizontalAngle = 90;
-          sendServoCommand('vertical', verticalAngle);  
+          sendServoCommand('vertical', verticalAngle);
           sendServoCommand('horizontal', horizontalAngle);
         }
 
@@ -1485,57 +1433,6 @@ const fetchBookedDevices = useCallback(async () => {
         highlightArrow(arrow);
       });
     });
-
-  document.addEventListener('keydown', (event) => {
-  if (!servoRunning) return;
-
-  let arrow = null;
-
-  switch (event.key) {
-    case 'ArrowUp':
-      verticalAngle = Math.max(minAngle, verticalAngle - step);
-      sendServoCommand('vertical', verticalAngle);
-      arrow = document.querySelector('.arrow.up');
-      break;
-
-    case 'ArrowDown':
-      verticalAngle = Math.min(maxAngle, verticalAngle + step);
-      sendServoCommand('vertical', verticalAngle);
-      arrow = document.querySelector('.arrow.down');
-      break;
-
-    case 'ArrowLeft':
-      horizontalAngle = Math.max(minAngle, horizontalAngle - step);
-      sendServoCommand('horizontal', horizontalAngle);
-      arrow = document.querySelector('.arrow.left');
-      break;
-
-    case 'ArrowRight':
-      horizontalAngle = Math.min(maxAngle, horizontalAngle + step);
-      sendServoCommand('horizontal', horizontalAngle);
-      arrow = document.querySelector('.arrow.right');
-      break;
-
-    case '0':
-    case 'c':
-    case 'C':
-      verticalAngle = 90;
-      horizontalAngle = 90;
-      sendServoCommand('vertical', verticalAngle);
-      sendServoCommand('horizontal', horizontalAngle);
-      arrow = document.querySelector('.arrow.center');
-      break;
-
-    default:
-      return; // Don't proceed if key not handled
-  }
-
-  event.preventDefault(); // Prevent page scrolling
-  updateAngleDisplay();
-
-  if (arrow) highlightArrow(arrow);
-});
-
 
     function sendServoCommand(axis, angle) {
       fetch(SERVER + "/servo?axis=" + axis + "&angle=" + angle)
@@ -2335,38 +2232,38 @@ const fetchBookedDevices = useCallback(async () => {
                     openDeviceWindow(device.id, ipInfo);
                   }}
                   renderIcon={(type, color) => {
-                    switch (type) {
-                      case "MonitorSmartphone":
-                        return <MonitorSmartphone size={32} color={color} />;
-                      case "ChartColumnStacked":
-                        return <ChartColumnStacked size={32} color={color} />;
-                      case "ThermoCamIcon":
-                        return (
-                          <span style={{ display: "flex", gap: "2px", alignItems: "center" }}>
-                            <ThermometerSun size={30} color={color} />
-                            <CameraIcon size={30} color={color} />
-                          </span>
-                        );
-                      case "UsbIcon":
-                        return <UsbIcon size={32} color={color} />;
-                      case "CpuIcon":
-                        return <CpuIcon size={32} color={color} />;
-                      case "ZapIcon":
-                        return <ZapIcon size={32} color={color} />;
-                      case "HardDriveIcon":
-                        return <HardDriveIcon size={32} color={color} />;
-                      case "TerminalIcon":
-                        return <TerminalIcon size={32} color={color} />;
-                      case "Volume2Icon":
-                        return <Volume2Icon size={32} color={color} />;
-                      case "VideoIcon":
-                        return <VideoIcon size={32} color={color} />;
-                      case "CodeIcon":
-                        return <CodeIcon size={32} color={color} />;
-                      default:
-                        return <MonitorSmartphone size={32} color={color} />;
-                    }
-                  }}
+                  switch (type) {
+                    case "MonitorSmartphone":
+                      return <MonitorSmartphone size={32} color={color} />;
+                    case "ChartColumnStacked":
+                      return <ChartColumnStacked size={32} color={color} />;
+                    case "ThermoCamIcon":
+                      return (
+                        <span style={{ display: "flex", gap: "2px", alignItems: "center" }}>
+                          <ThermometerSun size={30} color={color} />
+                          <CameraIcon size={30} color={color} />
+                        </span>
+                      );
+                    case "UsbIcon":
+                      return <Usb size={32} color={color} />;
+                    case "CpuIcon":
+                      return <Cpu size={32} color={color} />;
+                    case "ZapIcon":
+                      return <Zap size={32} color={color} />;
+                    case "HardDriveIcon":
+                      return <HardDrive size={32} color={color} />;
+                    case "TerminalIcon":
+                      return <Terminal size={32} color={color} />;
+                    case "Volume2Icon":
+                      return <Volume2 size={32} color={color} />;
+                    case "VideoIcon":
+                      return <Video size={32} color={color} />;
+                    case "CodeIcon":
+                      return <Code size={32} color={color} />;
+                    default:
+                      return <MonitorSmartphone size={32} color={color} />;
+                  }
+                }}
                   isDarkTheme={isDarkTheme}
                 />
               ))}
