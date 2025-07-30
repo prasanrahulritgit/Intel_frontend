@@ -11,14 +11,14 @@ import {
   LayoutGrid,
   CircleUserRound,
   ExternalLink,
-  Usb,
-  Cpu,
-  Zap,
-  HardDrive,
-  Terminal,
-  Volume2,
-  Video,
-  Code
+  UsbIcon,
+  CpuIcon,
+  ZapIcon,
+  HardDriveIcon,
+  TerminalIcon,
+  Volume2Icon,
+  VideoIcon,
+  CodeIcon,
 } from "lucide-react";
 
 const DeviceCard = ({ device, isActive, onClick, renderIcon, isDarkTheme }) => {
@@ -94,21 +94,23 @@ const Dashboard = () => {
   const deviceIdParam = queryParams.get("device");
   const ipTypesParam = queryParams.get("ip_type");
   const reservationIdParam = queryParams.get("reservation");
+  
 
-const driverTypes = {
-  ct1_ip: { name: "CT", iconType: "ThermoCamIcon" },
-  pc_ip: { name: "PC", iconType: "MonitorSmartphone" },
-  pulse1_ip: { name: "Pulse", iconType: "ChartColumnStacked" },
-  rutomatrix_ip: { name: "USB Over Network", iconType: "UsbIcon" },
-  rutomatrix_system_ip: { name: "System State Control and ATX", iconType: "CpuIcon" },
-  rutomatrix_bias_ip: { name: "Bias flashing", iconType: "ZapIcon" },
-  rutomatrix_os_ip: { name: "OS Flashing", iconType: "HardDriveIcon" },
-  rutomatrix_cmd_ip: { name: "Command Prompt(serial)", iconType: "TerminalIcon" },
-  rutomatrix_audio_ip: { name: "Audio transmission", iconType: "Volume2Icon" },
-  rutomatrix_stream1_ip: { name: "stream1", iconType: "VideoIcon" },
-  rutomatrix_stream2_ip: { name: "stream2", iconType: "VideoIcon" },
-  rutomatrix_postcode_ip: { name: "Post Code reading", iconType: "CodeIcon" }
-};
+  const driverTypes = {
+    ct1_ip: { name: "CT", iconType: "ThermoCamIcon" },
+    pc_ip: { name: "PC", iconType: "MonitorSmartphone" },
+    pulse1_ip: { name: "Pulse", iconType: "ChartColumnStacked" },
+    usb_ip: { name: "USB Over Network", iconType: "UsbIcon" },
+    system_ip: { name: "System State Control", iconType: "CpuIcon" },
+    bias_ip: { name: "Bias Flashing", iconType: "ZapIcon" },
+    os_ip: { name: "OS Flashing", iconType: "HardDriveIcon" },
+    cmd_ip: { name: "Command Prompt", iconType: "TerminalIcon" },
+    audio_ip: { name: "Audio Transmission", iconType: "Volume2Icon" },
+    stream1_ip: { name: "Stream 1", iconType: "VideoIcon" },
+    stream2_ip: { name: "Stream 2", iconType: "VideoIcon" },
+    postcode_ip: { name: "Post Code Reading", iconType: "CodeIcon" },
+    rutomatrix_ip: { name: "Rutomatrix", iconType: "MonitorSmartphone" },
+  };
 
   const userData = {
     name: "Admin User",
@@ -127,71 +129,120 @@ const driverTypes = {
     console.log(`Minimizing device ${deviceId}`);
   };
 
-const fetchBookedDevices = useCallback(async () => {
-  try {
-    setLoading(true);
-    const response = await axios.get("http://127.0.0.1:5000/api/booked-devices");
+  const fetchBookedDevices = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(
+        "http://127.0.0.1:5000/api/booked-devices"
+      );
 
-    if (response.data.success) {
-      const booked = response.data.booked_devices || [];
+      const responseData = response.data;
 
-      if (deviceIdParam && reservationIdParam) {
-        const matchedDevice = booked.find(
-          (dev) =>
-            dev.device_id === deviceIdParam &&
-            String(dev.reservation_id) === reservationIdParam
-        );
+      if (responseData.success) {
+        const booked = responseData.data.booked_devices || [];
 
-        if (matchedDevice) {
-          setDeviceEndTime(new Date(matchedDevice.end_time));
-          const ipTypes = ipTypesParam
-            ? ipTypesParam.split(",")
-            : [
-                "ct1_ip", "pc_ip", "pulse1_ip", 
-                "rutomatrix_ip", "rutomatrix_system_ip", "rutomatrix_bias_ip",
-                "rutomatrix_os_ip", "rutomatrix_cmd_ip", "rutomatrix_audio_ip",
-                "rutomatrix_stream1_ip", "rutomatrix_stream2_ip", "rutomatrix_postcode_ip"
-              ];
+        if (deviceIdParam && reservationIdParam) {
+          const matchedDevice = booked.find(
+            (dev) =>
+              dev.device.id === deviceIdParam &&
+              String(dev.id) === reservationIdParam
+          );
 
-          const driverDevices = ipTypes.map((ipType) => {
-            const driverInfo = driverTypes[ipType];
-            return {
-              id: `${matchedDevice.device_id}_${ipType}`,
-              name: `${matchedDevice.device_name} - ${driverInfo.name}`,
-              iconType: driverInfo.iconType,
-              ipType,
-              ipAddress: matchedDevice.device_details[ipType] || matchedDevice.device_details.rutomatrix_ip,
-              reservationId: matchedDevice.reservation_id,
-              deviceName: matchedDevice.device_name,
-            };
-          });
+          if (matchedDevice) {
+            setDeviceEndTime(new Date(matchedDevice.end_time));
 
-          setSelectedDevices(driverDevices);
-          setDeviceIpMapping((prev) => {
-            const newMapping = { ...prev };
-            driverDevices.forEach((driver) => {
-              newMapping[driver.id] = {
-                ip_type: driver.ipType,
-                ip_address: driver.ipAddress,
-                reservation_id: driver.reservationId,
-                device_name: driver.deviceName,
-                device_details: matchedDevice.device_details,
+            // Get all available IP types from the device
+            const ipTypes = Object.keys(matchedDevice.device)
+              .filter((key) => key.endsWith("_ip") && key !== "rutomatrix_ip")
+              .map((key) => key);
+
+            const driverDevices = ipTypes.map((ipType) => {
+              const driverInfo = driverTypes[ipType] || {
+                name: ipType.replace("_ip", ""),
+                iconType: "MonitorSmartphone",
+              };
+
+              return {
+                id: `${matchedDevice.device.id}_${ipType}`,
+                name: `Device ${parseInt(matchedDevice.device.id)} - ${
+                  driverInfo.name
+                }`,
+                iconType: driverInfo.iconType,
+                ipType,
+                ipAddress: matchedDevice.device[ipType],
+                reservationId: matchedDevice.reservation_id,
+                deviceName: matchedDevice.device_name,
               };
             });
-            return newMapping;
-          });
-        } else {
-          setError("No matching booked device found");
+
+            // Add Rutomatrix sub-drivers if rutomatrix_ip exists
+            if (matchedDevice.device.rutomatrix_ip) {
+              const rutomatrixIp = matchedDevice.device.rutomatrix_ip;
+              const subDrivers = [
+                { name: "USB Over Network", endpoint: "usb", icon: "UsbIcon" },
+                {
+                  name: "System State Control",
+                  endpoint: "systemstate_atx",
+                  icon: "CpuIcon",
+                },
+                { name: "Bias Flashing", endpoint: "bias", icon: "ZapIcon" },
+                { name: "OS Flashing", endpoint: "os", icon: "HardDriveIcon" },
+                //{ name: "Command Prompt", endpoint: "cmd", icon: "TerminalIcon" },
+                {
+                  name: "Audio Transmission",
+                  endpoint: "audio",
+                  icon: "Volume2Icon",
+                },
+                { name: "Stream 1", endpoint: "stream1", icon: "VideoIcon" },
+                { name: "Stream 2", endpoint: "stream2", icon: "VideoIcon" },
+                {
+                  name: "Post Code Reading",
+                  endpoint: "post_code",
+                  icon: "CodeIcon",
+                },
+              ];
+
+              subDrivers.forEach((driver) => {
+                driverDevices.push({
+                  id: `${matchedDevice.device.id}_rutomatrix_${driver.endpoint}`,
+                  name: `Device ${parseInt(matchedDevice.device.id)} - ${
+                    driver.name
+                  }`,
+                  iconType: driver.icon,
+                  ipType: `${driver.endpoint}`,
+                  ipAddress: `${rutomatrixIp}/${driver.endpoint}`,
+                  reservationId: matchedDevice.reservation_id,
+                  deviceName: matchedDevice.device_name,
+                });
+              });
+            }
+
+            setSelectedDevices(driverDevices);
+            setDeviceIpMapping((prev) => {
+              const newMapping = { ...prev };
+              driverDevices.forEach((driver) => {
+                newMapping[driver.id] = {
+                  ip_type: driver.ipType,
+                  ip_address: driver.ipAddress,
+                  reservation_id: driver.reservationId,
+                  device_name: driver.deviceName,
+                  device_details: matchedDevice.device,
+                };
+              });
+              return newMapping;
+            });
+          } else {
+            setError("No matching booked device found");
+          }
         }
       }
+      setLoading(false);
+    } catch (err) {
+      console.error("Error fetching booked devices:", err);
+      setError("Failed to fetch device information");
+      setLoading(false);
     }
-    setLoading(false);
-  } catch (err) {
-    console.error("Error fetching booked devices:", err);
-    setError("Failed to fetch device information");
-    setLoading(false);
-  }
-}, []);
+  }, [deviceIdParam, reservationIdParam]);
 
   useEffect(() => {
     fetchBookedDevices();
@@ -226,154 +277,156 @@ const fetchBookedDevices = useCallback(async () => {
     return () => window.removeEventListener("message", handleMessage);
   }, []);
 
-  const openDeviceWindow = async (deviceId, ipInfo = null) => {
-    const device = selectedDevices.find((d) => d.id === deviceId);
-    if (!device) {
-      console.warn("No matching device found.");
-      return;
-    }
+const openDeviceWindow = async (deviceId, ipInfo = null) => {
+  const device = selectedDevices.find((d) => d.id === deviceId);
+  if (!device) {
+    console.warn("No matching device found.");
+    return;
+  }
 
-    // Use the component's deviceEndTime state
-    if (!deviceEndTime) {
-      console.warn("No end time available for this device");
-      return;
-    }
+  // Use the component's deviceEndTime state
+  if (!deviceEndTime) {
+    console.warn("No end time available for this device");
+    return;
+  }
+  console.log("deviceEndTime:", deviceEndTime, typeof deviceEndTime);
 
-    const Timer = ({ endTime, deviceName, onExpired, isPopup = false }) => {
-      const timerRef = useRef(null);
-      const alertShownRef = useRef({
+  const Timer = ({ end, deviceName, onExpired, isPopup = false }) => {
+    const timerRef = useRef(null);
+    const alertShownRef = useRef({
+      thirtyMinutes: false,
+      tenMinutes: false,
+      expired: false,
+    });
+
+    const playAlertSound = () => {
+      try {
+        const audio = new Audio(
+          "https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3"
+        );
+        audio.volume = 0.3;
+        audio.play().catch((e) => console.log("Audio play failed:", e));
+      } catch (e) {
+        console.log("Audio error:", e);
+      }
+    };
+
+    const showAlert = async (message) => {
+      return new Promise((resolve) => {
+        if (!alertShownRef.current.isAlertActive) {
+          alertShownRef.current.isAlertActive = true;
+          playAlertSound();
+          alert(message);
+          alertShownRef.current.isAlertActive = false;
+          resolve();
+        }
+      });
+    };
+
+    const startCountdown = () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+
+      alertShownRef.current = {
         thirtyMinutes: false,
         tenMinutes: false,
         expired: false,
-      });
-
-      const playAlertSound = () => {
-        try {
-          const audio = new Audio(
-            "https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3"
-          );
-          audio.volume = 0.3;
-          audio.play().catch((e) => console.log("Audio play failed:", e));
-        } catch (e) {
-          console.log("Audio error:", e);
-        }
+        isAlertActive: false,
       };
 
-      const showAlert = async (message) => {
-        return new Promise((resolve) => {
-          if (!alertShownRef.current.isAlertActive) {
-            alertShownRef.current.isAlertActive = true;
-            playAlertSound();
-            alert(message);
-            alertShownRef.current.isAlertActive = false;
-            resolve();
+      timerRef.current = setInterval(async () => {
+        const now = new Date();
+        const difference = end - now;
+        const minutesLeft = Math.floor(difference / (1000 * 60));
+
+        if (difference <= 0) {
+          clearInterval(timerRef.current);
+          if (!alertShownRef.current.expired) {
+            await showAlert(`Your booking for ${deviceName} has expired!`);
+            alertShownRef.current.expired = true;
+            if (onExpired) onExpired();
           }
-        });
-      };
+        } else if (minutesLeft === 10 && !alertShownRef.current.tenMinutes) {
+          await showAlert(`Warning: Only 10 minutes left for ${deviceName}`);
+          alertShownRef.current.tenMinutes = true;
+        } else if (
+          minutesLeft === 30 &&
+          !alertShownRef.current.thirtyMinutes
+        ) {
+          await showAlert(`Warning: Only 30 minutes left for ${deviceName}`);
+          alertShownRef.current.thirtyMinutes = true;
+        }
+      }, 1000);
+    };
 
-      const startCountdown = () => {
+    useEffect(() => {
+      if (end) {
+        startCountdown();
+      }
+
+      return () => {
         if (timerRef.current) {
           clearInterval(timerRef.current);
         }
-
-        alertShownRef.current = {
-          thirtyMinutes: false,
-          tenMinutes: false,
-          expired: false,
-          isAlertActive: false,
-        };
-
-        timerRef.current = setInterval(async () => {
-          const now = new Date();
-          const difference = endTime - now;
-          const minutesLeft = Math.floor(difference / (1000 * 60));
-
-          if (difference <= 0) {
-            clearInterval(timerRef.current);
-            if (!alertShownRef.current.expired) {
-              await showAlert(`Your booking for ${deviceName} has expired!`);
-              alertShownRef.current.expired = true;
-              if (onExpired) onExpired();
-            }
-          } else if (minutesLeft === 10 && !alertShownRef.current.tenMinutes) {
-            await showAlert(`Warning: Only 10 minutes left for ${deviceName}`);
-            alertShownRef.current.tenMinutes = true;
-          } else if (
-            minutesLeft === 30 &&
-            !alertShownRef.current.thirtyMinutes
-          ) {
-            await showAlert(`Warning: Only 30 minutes left for ${deviceName}`);
-            alertShownRef.current.thirtyMinutes = true;
-          }
-        }, 1000);
       };
+    }, [end]);
 
-      useEffect(() => {
-        if (endTime) {
-          startCountdown();
+    return null; // This component doesn't render anything
+  };
+
+  const ipType = ipInfo?.ip_type || "";
+  const ipAddress = ipInfo?.ip_address || "";
+  const deviceName = ipInfo?.device_name || "";
+  const title = `Rutomatrix &#x2022; ${deviceName} - ${ipType}`;
+
+  const isCT = ["CT"].some((ct) => device.name.includes(ct));
+  const isPulse = ["Pulse"].some((pulse) => device.name.includes(pulse));
+  const isPC = device.name.includes("PC");
+  const isAudio = ["Audio"].some((audio_ip) =>
+    device.name.includes(audio_ip)
+  );
+
+  // Timer script that will receive updates from parent window
+  const timerScript = `
+    <script>
+      // Function to update timer display
+      function updateTimer(timeLeft, isLast10Minutes) {
+        const timerElement = document.getElementById('device-timer');
+        if (timerElement) {
+          timerElement.innerHTML = \`
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <span style="font-family: monospace; \${isLast10Minutes ? 'color: #ff4444; font-weight: bold;' : ''}">
+                \${timeLeft}
+              </span>
+            </div>
+          \`;
         }
+      }
 
-        return () => {
-          if (timerRef.current) {
-            clearInterval(timerRef.current);
-          }
-        };
-      }, [endTime]);
-
-      return null; // This component doesn't render anything
-    };
-
-    const ipType = ipInfo?.ip_type || "";
-    const ipAddress = ipInfo?.ip_address || "";
-    const deviceName = ipInfo?.device_name || "";
-    const title = `Rutomatrix &#x2022; ${deviceName} - ${ipType}`;
-
-    const isCT = ["CT1", "CT2", "CT3"].some((ct) => device.name.includes(ct));
-    const isPulse = ["Pulse1", "Pulse2", "Pulse3"].some((pulse) =>
-      device.name.includes(pulse)
-    );
-    const isPC = device.name.includes("PC");
-
-    // Timer script that will receive updates from parent window
-    const timerScript = `
-      <script>
-        // Function to update timer display
-        function updateTimer(timeLeft, isLast10Minutes) {
-          const timerElement = document.getElementById('device-timer');
-          if (timerElement) {
-            timerElement.innerHTML = \`
-              <div style="display: flex; align-items: center; gap: 4px;">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <polyline points="12 6 12 12 16 14"></polyline>
-                </svg>
-                <span style="font-family: monospace; \${isLast10Minutes ? 'color: #ff4444; font-weight: bold;' : ''}">
-                  \${timeLeft}
-                </span>
-              </div>
-            \`;
-          }
+      // Listen for timer updates from parent window
+      window.addEventListener('message', (event) => {
+        if (event.data.type === 'updateTimer') {
+          updateTimer(event.data.timeLeft, event.data.isLast10Minutes);
         }
+      });
+    </script>
+  `;
 
-        // Listen for timer updates from parent window
-        window.addEventListener('message', (event) => {
-          if (event.data.type === 'updateTimer') {
-            updateTimer(event.data.timeLeft, event.data.isLast10Minutes);
-          }
-        });
-      </script>
-    `;
-
-    const postMessageScript = `
-      <script>
-        window.addEventListener('load', () => {
-          window.opener.postMessage(
-            { type: 'windowTitle', deviceId: "${deviceId}", title: document.title },
-            '*'
-          );
-        });
-      </script>
-    `;
+  const postMessageScript = `
+    <script>
+      window.addEventListener('load', () => {
+        window.opener.postMessage(
+          { type: 'windowTitle', deviceId: "${deviceId}", title: document.title },
+          '*'
+        );
+      });
+    </script>
+  `;
 
     let popupHTML = "";
 
@@ -582,7 +635,23 @@ const fetchBookedDevices = useCallback(async () => {
     height: 0;
     border-style: solid;
     cursor: pointer;
+    transition: transform 0.2s ease, filter 0.2s ease;
   }
+
+  /* Hover effect for all arrows */
+  .arrow:hover {
+    transform: scale(1.2);
+    filter: brightness(1.2);
+  }
+
+  /* Click effect (brief push-in animation) */
+/* Active class for keyboard-triggered highlight */
+.arrow.active {
+  transform: scale(0.95);
+  opacity: 1;
+  filter: brightness(1.4);
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
 
   .arrow.up {
     border-width: 0 20px 20px 20px;
@@ -604,12 +673,23 @@ const fetchBookedDevices = useCallback(async () => {
     border-color: transparent transparent transparent #FF6A00;
   }
 
+  /* Center dot enhancements */
   .arrow.center {
     width: 20px;
     height: 20px;
     background-color: #FF6A00;
     border-radius: 50%;
     margin: auto;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+  }
+
+  .arrow.center:hover {
+    transform: scale(1.2);
+    background-color: #ffa347;
+  }
+
+  .arrow.center:active {
+    transform: scale(0.9);
   }
 
   .angle-display {
@@ -899,7 +979,7 @@ const fetchBookedDevices = useCallback(async () => {
       <div class="device-info">
         <div class="device-name-row">
           <div class="device-name">${device.name}</div>
-          <div id="device-timer"></div>
+          <div id="device-timer">--:--:--</div>
         </div>
         <div class="ip-display">
           IP: ${ipAddress || "Not available"}
@@ -975,16 +1055,18 @@ const fetchBookedDevices = useCallback(async () => {
 <script>
     document.addEventListener('DOMContentLoaded', () => {
       // API Endpoints
-      const startCameraAPI = "https://100.68.107.103:8000/start-camera";
-      const stopCameraAPI = "https://100.68.107.103:8000/stop-camera";
-      const startThermalAPI = "https://100.68.107.103:8000/start-thermal";
-      const stopThermalAPI = "https://100.68.107.103:8000/stop-thermal";
-      const cameraFeedAPI = "https://100.68.107.103:8001/camera.mjpg";
-      const thermalFeedAPI = "https://100.68.107.103:8002/thermal";
-      const cameraVerifiedAPI = "https://100.68.107.103:8001/camera_verified";
-      const thermalVerifiedAPI = "https://100.68.107.103:8002/thermal_verified";
-      const startServoAPI = "https://100.68.107.103:8000/start-servo";
-      const stopServoAPI = "https://100.68.107.103:8000/stop-servo";
+      const startCameraAPI = "http://100.68.107.103:8000/start-camera";
+      const stopCameraAPI = "http://100.68.107.103:8000/stop-camera";
+      const startThermalAPI = "http://100.68.107.103:8000/start-thermal";
+      const stopThermalAPI = "http://100.68.107.103:8000/stop-thermal";
+      const cameraFeedAPI = "http://100.68.107.103:8001/camera.mjpg";
+      const thermalFeedAPI = "http://100.68.107.103:8002/thermal";
+      const cameraVerifiedAPI = "http://100.68.107.103:8001/camera_verified";
+      const thermalVerifiedAPI = "http://100.68.107.103:8002/thermal_verified";
+      const startServoAPI = "http://100.68.107.103:8000/start-servo";
+      const stopServoAPI = "http://100.68.107.103:8000/stop-servo";
+      const panel = document.getElementById('servo-panel');
+      const angleDisplay = document.getElementById('angle-display');
 
       // DOM elements
       const cameraFeed = document.getElementById('camera-feed');
@@ -994,11 +1076,8 @@ const fetchBookedDevices = useCallback(async () => {
       const refreshBtn = document.getElementById('refresh-btn');
       const streamBtn = document.getElementById('stream-btn');
       const resetBtn = document.getElementById('reset-btn');
-      
       const toggleBtn = document.getElementById('servo-toggle-btn');
 
-      refreshBtn.disabled = true;
-      refreshBtn.style.backgroundColor = '#ff4444';
 
       // State variables
       let isCorsVerified = false;
@@ -1008,6 +1087,10 @@ const fetchBookedDevices = useCallback(async () => {
       // Initialize UI
       streamBtn.style.backgroundColor = '#ff4444';
       streamBtn.disabled = false;
+
+      refreshBtn.disabled = true;
+      refreshBtn.style.backgroundColor = '#ff4444';
+
 
       toggleBtn.addEventListener('click', () => {
         panel.classList.toggle('hidden');
@@ -1107,12 +1190,38 @@ const fetchBookedDevices = useCallback(async () => {
             testConnection(cameraVerifiedAPI),
             testConnection(thermalVerifiedAPI)
           ]);
-          
-          if (!cameraReachable || !thermalReachable) {
-            throw new Error('Servers unreachable: Camera ' + (cameraReachable ? 'OK' : 'DOWN') + 
-                          ', Thermal ' + (thermalReachable ? 'OK' : 'DOWN'));
+
+           resetBtn.addEventListener('click', async () => {
+        resetBtn.disabled = true;
+        resetBtn.textContent = 'Resetting...';
+
+        try {
+          const [stopCameraRes, stopThermalRes] = await Promise.all([
+            fetch(stopCameraAPI, { method: 'GET' }),
+            fetch(stopThermalAPI, { method: 'GET' })
+          ]);
+
+          if (stopCameraRes.ok && stopThermalRes.ok) {
+            showAlert('success', 'Reset completed successfully.');
+            resetBtn.classList.add('hidden'); // Hide button after successful reset
+          } else {
+            showAlert('error', 'Reset failed. Please check server.');
           }
+        } catch (error) {
+          console.error('Reset failed:', error);
+          showAlert('error', 'Reset failed due to network error.');
+        } finally {
+          resetBtn.disabled = false;
+          resetBtn.textContent = 'Reset';
+        }
+      });
           
+      if (!cameraReachable || !thermalReachable) {
+        throw new Error('Servers unreachable: Camera ' + (cameraReachable ? 'OK' : 'DOWN') + 
+                      ', Thermal ' + (thermalReachable ? 'OK' : 'DOWN'));
+          resetBtn.classList.remove('hidden');  // Show Reset button
+      }
+
           // Then verify endpoints
           const [cameraResponse, thermalResponse] = await Promise.all([
             fetch(cameraVerifiedAPI, { 
@@ -1251,13 +1360,13 @@ const fetchBookedDevices = useCallback(async () => {
           cameraFeed.innerHTML = '<div class="feed-Placeholder">Camera feed stopped</div>';
           thermalFeed.innerHTML = '<div class="feed-Placeholder">Thermal feed stopped</div>';
           streamBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16"><path d="M16 16v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v4m4-4v16" fill="none" stroke="currentColor" stroke-width="2"/></svg> Start Stream';
-          isStreaming = false;
-          
+          isStreaming = false;       
+
         // Show alert depending on result
           if (servicesStopped) {
             showAlert('success', 'Stream stopped successfully');
           } else {
-            showAlert('success', 'Stream stopped.');
+            showAlert('warning', 'Stream stopped.');
           }
           
         } catch (error) {
@@ -1310,43 +1419,12 @@ const fetchBookedDevices = useCallback(async () => {
           setTimeout(() => document.body.removeChild(alertDiv), 500);
         }, 3000);
       }
-
-      if (!cameraReachable || !thermalReachable) {
-        resetBtn.classList.remove('hidden');  // Show Reset button
-        throw new Error('Servers unreachable: Camera ' + (cameraReachable ? 'OK' : 'DOWN') + 
-                      ', Thermal ' + (thermalReachable ? 'OK' : 'DOWN'));
-      }
-
-      resetBtn.addEventListener('click', async () => {
-      resetBtn.disabled = true;
-      resetBtn.textContent = 'Resetting...';
-
-      try {
-        const [stopCameraRes, stopThermalRes] = await Promise.all([
-          fetch(stopCameraAPI, { method: 'GET' }),
-          fetch(stopThermalAPI, { method: 'GET' })
-        ]);
-
-        if (stopCameraRes.ok && stopThermalRes.ok) {
-          showAlert('success', 'Reset completed successfully.');
-          resetBtn.classList.add('hidden'); // Hide button after successful reset
-        } else {
-          showAlert('error', 'Reset failed. Please check server.');
-        }
-      } catch (error) {
-        console.error('Reset failed:', error);
-        showAlert('error', 'Reset failed due to network error.');
-      } finally {
-        resetBtn.disabled = false;
-        resetBtn.textContent = 'Reset';
-      }
-    });
-
-
+      
+    
     //Servo Control Script
-    const SERVER = "https://100.68.107.103:8003";  //RPi backend URL
+    const SERVER = "http://100.68.107.103:8003";  //RPi backend URL
 
-    let servoRunning = false;  // Track state
+    let servoRunning = false;   // Track state
 
     const controlBtn = document.getElementById('servo-toggle-btn');
 
@@ -1368,9 +1446,6 @@ const fetchBookedDevices = useCallback(async () => {
           console.error('Error calling API:', error);
         });
     });
-
-    const panel = document.getElementById('servo-panel');
-    const angleDisplay = document.getElementById('angle-display');
 
     let verticalAngle = 90;
     let horizontalAngle = 90;
@@ -1425,7 +1500,7 @@ const fetchBookedDevices = useCallback(async () => {
         } else if (direction === 'center') {
           verticalAngle = 90;
           horizontalAngle = 90;
-          sendServoCommand('vertical', verticalAngle);
+          sendServoCommand('vertical', verticalAngle);  
           sendServoCommand('horizontal', horizontalAngle);
         }
 
@@ -1433,6 +1508,57 @@ const fetchBookedDevices = useCallback(async () => {
         highlightArrow(arrow);
       });
     });
+
+  document.addEventListener('keydown', (event) => {
+  if (!servoRunning) return;
+
+  let arrow = null;
+
+  switch (event.key) {
+    case 'ArrowUp':
+      verticalAngle = Math.max(minAngle, verticalAngle - step);
+      sendServoCommand('vertical', verticalAngle);
+      arrow = document.querySelector('.arrow.up');
+      break;
+
+    case 'ArrowDown':
+      verticalAngle = Math.min(maxAngle, verticalAngle + step);
+      sendServoCommand('vertical', verticalAngle);
+      arrow = document.querySelector('.arrow.down');
+      break;
+
+    case 'ArrowLeft':
+      horizontalAngle = Math.max(minAngle, horizontalAngle - step);
+      sendServoCommand('horizontal', horizontalAngle);
+      arrow = document.querySelector('.arrow.left');
+      break;
+
+    case 'ArrowRight':
+      horizontalAngle = Math.min(maxAngle, horizontalAngle + step);
+      sendServoCommand('horizontal', horizontalAngle);
+      arrow = document.querySelector('.arrow.right');
+      break;
+
+    case '0':
+    case 'c':
+    case 'C':
+      verticalAngle = 90;
+      horizontalAngle = 90;
+      sendServoCommand('vertical', verticalAngle);
+      sendServoCommand('horizontal', horizontalAngle);
+      arrow = document.querySelector('.arrow.center');
+      break;
+
+    default:
+      return; // Don't proceed if key not handled
+  }
+
+  event.preventDefault(); // Prevent page scrolling
+  updateAngleDisplay();
+
+  if (arrow) highlightArrow(arrow);
+});
+
 
     function sendServoCommand(axis, angle) {
       fetch(SERVER + "/servo?axis=" + axis + "&angle=" + angle)
@@ -1631,7 +1757,7 @@ const fetchBookedDevices = useCallback(async () => {
       <div class="device-info">
         <div class="device-name-row">
           <div class="device-name">${device.name}</div>
-          <div id="device-timer"></div>
+          <div id="device-timer">--:--:--</div>
         </div>
       </div>
       <div class="controls">
@@ -1946,7 +2072,7 @@ const fetchBookedDevices = useCallback(async () => {
       <div class="device-info">
         <div class="device-name-row">
           <div class="device-name">${device.name}</div>
-          <div id="device-timer"></div>
+          <div id="device-timer">--:--:--</div>
         </div>
       </div>
       <div class="controls">
@@ -2062,6 +2188,505 @@ const fetchBookedDevices = useCallback(async () => {
   </script>
 </body>
 </html>`;
+} else if (isAudio) {
+    popupHTML = `<!DOCTYPE html>
+<html>
+<head>
+  <title>${title}</title>
+  ${postMessageScript}
+  ${timerScript}
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #121212;
+      color: #FFFFFF;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .audio-container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      padding: 16px;
+      box-sizing: border-box;
+      gap: 16px;
+      max-width: 2000px;
+      margin: 0 auto;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: #1E1E1E;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .device-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .device-name-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #device-timer {
+      margin-left: 10px;
+    }
+
+    .device-name {
+      font-size: 18px;
+      font-weight: 600;
+      color: #FF6A00;
+      white-space: normal;
+      overflow: visible;
+      text-overflow: unset;
+      word-break: break-word;
+      line-height: 1.2;
+      text-align: center;
+    }
+
+    .no-feed {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #BBBBBB; 
+    font-size: 16px;
+    text-align: center;
+    }
+
+    .no-feed p {
+      margin-bottom: 20px;
+    }
+
+    .connect-btn1 {
+      padding: 10px 20px;
+      background-color: #ff6a00;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.3s;
+    }
+
+    .connect-btn1:hover {
+      background-color: #2980b9;
+    }
+
+    .audio-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .audio-viewer-container {
+      flex: 1;
+      background: #1E1E1E;
+      border: groove 1px #7c7c7c;
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .audio-viewer-header {
+      padding: 8px 12px;
+      background: rgba(0,0,0,0.3);
+      font-size: 14px;
+    }
+
+    .audio-viewer-content {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .audio-visualization {
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 10px;
+    }
+
+    .audio-visualization canvas {
+      width: 100%;
+      height: 150px;
+      display: block;
+    }
+
+    .progress-container {
+      width: 100%;
+      height: 4px;
+      background: #e0e0e0;
+      border-radius: 2px;
+      cursor: pointer;
+      margin-bottom: 15px;
+      position: relative;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: #0074c2;
+      border-radius: 2px;
+      transition: width 0.1s linear;
+    }
+
+    .time-display {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 5px;
+      font-size: 12px;
+      color: #777;
+    }
+
+    .audio-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 10px;
+    }
+
+    .play-button {
+      background: none;
+      border: none;
+      font-size: 20px;
+      color: #0074c2;
+      cursor: pointer;
+      padding: 8px;
+    }
+
+    .volume-container {
+      display: flex;
+      align-items: center;
+      position: relative;
+      margin-right: 90px;
+    }
+
+    .volume-icon {
+      background: none;
+      border: none;
+      font-size: 20px;
+      color: #0074c2;
+      cursor: pointer;
+      padding: 8px;
+    }
+
+    .volume-slider {
+      position: absolute;
+      flex-grow: 1;
+      bottom: 17px;
+      left: 40px;
+      width: 100px;
+      height: 6px;
+      transform-origin: right bottom;
+      background: #e0e0e0;
+      border-radius: 3px;
+      -webkit-appearance: none;
+    }
+
+    .volume-text {
+      position: absolute;
+      top: 35px;
+      right: 0;
+      font-size: 12px;
+      color: #0074c2;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .volume-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: #0074c2;
+      cursor: pointer;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    #audio-source-select {
+      padding: 6px;
+      font-size: 14px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      background-color: #1E1E1E;
+      color: #fff;
+    }
+    #header-connect-btn[disabled] {
+      background-color: #555;
+      cursor: not-allowed;
+    }
+
+  </style>
+  <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+</head>
+
+<body>
+ <div class="audio-container">
+  <div class="header">
+    <div class="device-info">
+      <div class="device-name-row">
+        <div class="device-name">${device.name}</div>
+        <div id="device-timer">--:--:--</div>
+      </div>
+    </div>
+    <div class="header-controls">
+      <select id="audio-source-select">
+        <option value="">Select Source</option>
+        <option value="HDMI">HDMI</option>
+        <option value="Bluetooth">Bluetooth</option>
+      </select>
+      <button id="header-connect-btn" class="connect-btn1" disabled>Connect to Stream</button>
+    </div>
+  </div>
+
+  <div class="audio-content">
+    <div class="audio-viewer-container">
+      <div class="audio-viewer-header">
+        <span>Audio Stream</span>
+      </div>
+      <div class="audio-viewer-content">
+        <div id="root"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="text/babel">
+const { useState, useRef, useEffect } = React;
+
+const AudioStreamPage = () => {
+  const [selectedSource, setSelectedSource] = useState("");
+  const [isConnected, setIsConnected] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [volume, setVolume] = useState(50);
+  const [isMuted, setIsMuted] = useState(false);
+  const [showVolumeSlider, setShowVolumeSlider] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(1);
+
+  const audioRef = useRef(null);
+  const canvasRef = useRef(null);
+  const animationRef = useRef(null);
+  const progressRef = useRef(null);
+
+  const formatTime = time => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return \`\${minutes}:\${seconds < 10 ? '0' : ''}\${seconds}\`;
+  };
+
+  const handleConnect = () => {
+    const sourceDropdown = document.getElementById('audio-source-select');
+    const selected = sourceDropdown && sourceDropdown.value || '';
+    if (!selected) return;
+
+    setSelectedSource(selected);
+    setIsConnected(true);
+
+    setTimeout(() => {
+      setIsPlaying(true);
+      if (audioRef.current) {
+        audioRef.current.volume = volume / 100;
+        audioRef.current.play().catch(e => console.error("Audio play failed:", e));
+      }
+    }, 500);
+  };
+
+  const handlePlayPause = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play().catch(e => console.error("Audio play failed:", e));
+      }
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  const handleVolumeChange = (e) => {
+    const newVolume = e.target.value;
+    setVolume(newVolume);
+    if (audioRef.current) {
+      audioRef.current.volume = newVolume / 100;
+      setIsMuted(newVolume == 0);
+    }
+    setTimeout(() => setShowVolumeSlider(false), 5000);
+  };
+
+  const handleProgressClick = (e) => {
+    if (!audioRef.current) return;
+    const rect = progressRef.current.getBoundingClientRect();
+    const pos = (e.clientX - rect.left) / rect.width;
+    audioRef.current.currentTime = pos * duration;
+  };
+
+  const simulateAudioData = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    const width = canvas.width;
+    const height = canvas.height;
+    const barWidth = 4;
+    const gap = 2;
+    const totalBars = Math.floor(width / (barWidth + gap));
+
+    ctx.clearRect(0, 0, width, height);
+
+    for (let i = 0; i < totalBars; i++) {
+      const isPlayed = (i / totalBars) < (currentTime / duration);
+      const barHeight = Math.random() * (height * 0.8);
+      const x = i * (barWidth + gap);
+      const y = (height - barHeight) / 2;
+      ctx.fillStyle = isPlayed ? '#3498db' : '#ecf0f1';
+      ctx.fillRect(x, y, barWidth, barHeight);
+    }
+
+    if (isPlaying) {
+      animationRef.current = requestAnimationFrame(simulateAudioData);
+    }
+  };
+
+  useEffect(() => {
+    if (isPlaying) {
+      simulateAudioData();
+    } else {
+      cancelAnimationFrame(animationRef.current);
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+    return () => cancelAnimationFrame(animationRef.current);
+  }, [isPlaying]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const updateTime = () => setCurrentTime(audio.currentTime);
+    const updateDuration = () => setDuration(audio.duration || 1);
+    audio.addEventListener('timeupdate', updateTime);
+    audio.addEventListener('loadedmetadata', updateDuration);
+    return () => {
+      audio.removeEventListener('timeupdate', updateTime);
+      audio.removeEventListener('loadedmetadata', updateDuration);
+    };
+  }, []);
+
+  return (
+    <div className="stream-container1">
+      <button id="react-connect-btn" style={{ display: 'none' }} onClick={handleConnect}>React Connect</button>
+
+      {!isConnected ? (
+        <div className="no-feed">
+          <p>No feed available</p>
+        </div>
+      ) : (
+        <div className="audio-feed">
+          <div className="audio-visualization">
+            <canvas ref={canvasRef} width="600" height="150" />
+          </div>
+
+          <div className="progress-container" ref={progressRef} onClick={handleProgressClick}>
+            <div className="progress-bar" style={{ width: \`\${(currentTime / duration) * 100}%\` }}></div>
+            <div className="time-display">
+              <span>{formatTime(currentTime)}</span>
+              <span>{formatTime(duration)}</span>
+            </div>
+          </div>
+
+          <div className="audio-controls">
+            <button className="play-button" onClick={handlePlayPause}>
+              {isPlaying ? <i className="fas fa-pause" /> : <i className="fas fa-play" />}
+            </button>
+
+            <div className="volume-container">
+              <button
+                className="volume-icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowVolumeSlider(!showVolumeSlider);
+                }}
+              >
+                {isMuted ? <i className="fas fa-volume-mute" /> : <i className="fas fa-volume-up" />}
+              </button>
+
+              {showVolumeSlider && (
+                <div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={volume}
+                    onChange={handleVolumeChange}
+                    className="volume-slider"
+                  />
+                  <div className="volume-text">{volume}%</div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <audio ref={audioRef} loop src="https://stream.example.com/audio" />
+        </div>
+      )}
+    </div>
+  );
+};
+
+ReactDOM.render(<AudioStreamPage />, document.getElementById("root"));
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const select = document.getElementById('audio-source-select');
+  const btn = document.getElementById('header-connect-btn');
+
+  select.addEventListener('change', () => {
+    btn.disabled = select.value === '';
+  });
+
+  btn.addEventListener('click', () => {
+    const connectBtn = document.getElementById('react-connect-btn');
+    if (connectBtn) {
+      connectBtn.click();
+      const streamContainer = document.querySelector('.stream-container1');
+      if (streamContainer) {
+        streamContainer.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  });
+});
+</script>
+</body>
+</html>`;
     } else {
       popupHTML = `<!DOCTYPE html>
 <html>
@@ -2080,7 +2705,7 @@ const fetchBookedDevices = useCallback(async () => {
 </head>
 <body>
   <h2>Welcome to ${device.name}</h2>
-  <div id="device-timer"></div>
+  <div id="device-timer">--:--:--</div>
   <div class="ip-container">
     <h3>Device IP Address:</h3>
     <div>
@@ -2092,70 +2717,75 @@ const fetchBookedDevices = useCallback(async () => {
 </body>
 </html>`;
     }
+ const blob = new Blob([popupHTML], { type: "text/html" });
+  const url = URL.createObjectURL(blob);
 
-    const blob = new Blob([popupHTML], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
+  const popup = window.open(
+    url,
+    `device_${deviceId}`,
+    "width=1000,height=700,left=100,top=100,resizable=yes"
+  );
 
-    const popup = window.open(
-      url,
-      `device_${deviceId}`,
-      "width=1000,height=700,left=100,top=100,resizable=yes"
-    );
+  if (!popup) {
+    URL.revokeObjectURL(url);
+    alert("Please allow popups for this site");
+    return;
+  }
 
-    if (!popup) {
-      URL.revokeObjectURL(url);
-      alert("Please allow popups for this site");
-      return;
+  // Timer update function to send to popup
+  const updatePopupTimer = () => {
+    if (!popup.closed && deviceEndTime) {
+      const now = new Date();
+      const end = new Date(deviceEndTime);
+      
+      // Validate the date
+      if (isNaN(end.getTime())) {
+        console.error("Invalid end time:", deviceEndTime);
+        return;
+      }
+
+      const difference = end - now;
+      const minutesLeft = Math.floor(difference / (1000 * 60));
+
+      // Format time only if difference is positive
+      const timeLeft = difference > 0 
+        ? new Date(difference).toISOString().substr(11, 8)
+        : "00:00:00";
+
+      const isLast10Minutes = minutesLeft <= 10;
+
+      popup.postMessage(
+        {
+          type: "updateTimer",
+          timeLeft,
+          isLast10Minutes,
+        },
+        "*"
+      );
     }
-
-    // Timer update function to send to popup
-    const updatePopupTimer = () => {
-      if (!popup.closed && deviceEndTime) {
-        const now = new Date();
-        const difference = deviceEndTime - now;
-        const minutesLeft = Math.floor(difference / (1000 * 60));
-
-        const hours = Math.floor(difference / (1000 * 60 * 60));
-        const minutes = Math.floor((difference / (1000 * 60)) % 60);
-        const seconds = Math.floor((difference / 1000) % 60);
-
-        const timeLeft = `${hours.toString().padStart(2, "0")}:${minutes
-          .toString()
-          .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-        const isLast10Minutes = minutesLeft <= 10;
-
-        popup.postMessage(
-          {
-            type: "updateTimer",
-            timeLeft,
-            isLast10Minutes,
-          },
-          "*"
-        );
-      }
-    };
-
-    // Set up timer interval to update popup
-    const timerInterval = setInterval(updatePopupTimer, 1000);
-    updatePopupTimer(); // Initial update
-
-    const cleanup = () => {
-      clearInterval(timerInterval);
-      URL.revokeObjectURL(url);
-      setActiveDevices((prev) => prev.filter((id) => id !== deviceId));
-    };
-
-    popup.onbeforeunload = cleanup;
-
-    const checkPopupClosed = setInterval(() => {
-      if (popup.closed) {
-        clearInterval(checkPopupClosed);
-        cleanup();
-      }
-    }, 500);
-
-    setActiveDevices((prev) => [...prev, deviceId]);
   };
+
+  // Set up timer interval to update popup
+  const timerInterval = setInterval(updatePopupTimer, 1000);
+  updatePopupTimer(); // Initial update
+
+  const cleanup = () => {
+    clearInterval(timerInterval);
+    URL.revokeObjectURL(url);
+    setActiveDevices((prev) => prev.filter((id) => id !== deviceId));
+  };
+
+  popup.onbeforeunload = cleanup;
+
+  const checkPopupClosed = setInterval(() => {
+    if (popup.closed) {
+      clearInterval(checkPopupClosed);
+      cleanup();
+    }
+  }, 500);
+
+  setActiveDevices((prev) => [...prev, deviceId]);
+};
 
   return (
     <div className={`dashboard-container ${isDarkTheme ? "dark-theme" : ""}`}>
@@ -2232,38 +2862,44 @@ const fetchBookedDevices = useCallback(async () => {
                     openDeviceWindow(device.id, ipInfo);
                   }}
                   renderIcon={(type, color) => {
-                  switch (type) {
-                    case "MonitorSmartphone":
-                      return <MonitorSmartphone size={32} color={color} />;
-                    case "ChartColumnStacked":
-                      return <ChartColumnStacked size={32} color={color} />;
-                    case "ThermoCamIcon":
-                      return (
-                        <span style={{ display: "flex", gap: "2px", alignItems: "center" }}>
-                          <ThermometerSun size={30} color={color} />
-                          <CameraIcon size={30} color={color} />
-                        </span>
-                      );
-                    case "UsbIcon":
-                      return <Usb size={32} color={color} />;
-                    case "CpuIcon":
-                      return <Cpu size={32} color={color} />;
-                    case "ZapIcon":
-                      return <Zap size={32} color={color} />;
-                    case "HardDriveIcon":
-                      return <HardDrive size={32} color={color} />;
-                    case "TerminalIcon":
-                      return <Terminal size={32} color={color} />;
-                    case "Volume2Icon":
-                      return <Volume2 size={32} color={color} />;
-                    case "VideoIcon":
-                      return <Video size={32} color={color} />;
-                    case "CodeIcon":
-                      return <Code size={32} color={color} />;
-                    default:
-                      return <MonitorSmartphone size={32} color={color} />;
-                  }
-                }}
+                    switch (type) {
+                      case "MonitorSmartphone":
+                        return <MonitorSmartphone size={32} color={color} />;
+                      case "ChartColumnStacked":
+                        return <ChartColumnStacked size={32} color={color} />;
+                      case "ThermoCamIcon":
+                        return (
+                          <span
+                            style={{
+                              display: "flex",
+                              gap: "2px",
+                              alignItems: "center",
+                            }}
+                          >
+                            <ThermometerSun size={30} color={color} />
+                            <CameraIcon size={30} color={color} />
+                          </span>
+                        );
+                      case "UsbIcon":
+                        return <UsbIcon size={32} color={color} />;
+                      case "CpuIcon":
+                        return <CpuIcon size={32} color={color} />;
+                      case "ZapIcon":
+                        return <ZapIcon size={32} color={color} />;
+                      case "HardDriveIcon":
+                        return <HardDriveIcon size={32} color={color} />;
+                      case "TerminalIcon":
+                        return <TerminalIcon size={32} color={color} />;
+                      case "Volume2Icon":
+                        return <Volume2Icon size={32} color={color} />;
+                      case "VideoIcon":
+                        return <VideoIcon size={32} color={color} />;
+                      case "CodeIcon":
+                        return <CodeIcon size={32} color={color} />;
+                      default:
+                        return <MonitorSmartphone size={32} color={color} />;
+                    }
+                  }}
                   isDarkTheme={isDarkTheme}
                 />
               ))}
