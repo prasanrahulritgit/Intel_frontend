@@ -82,7 +82,7 @@ const fetchDeviceData = async (deviceId) => {
     }
 
     return {
-      name: device.device?.id || device.id || 'Unknown Device',
+      name: `Device ${parseInt(device.device?.id || device.id || 'Unknown Device')}`,
       endTime: new Date(device.time?.end || device.end_time)
     };
 
@@ -201,7 +201,7 @@ const fetchDeviceData = async (deviceId) => {
       clearInterval(timerRef.current);
       clearInterval(refreshInterval);
     };
-  }, [userData?.device_id]);
+  }, []);
 
   return (
     <div className={`navbar-container ${isDarkTheme ? "dark" : ""}`}>
