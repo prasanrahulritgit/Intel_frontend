@@ -365,6 +365,7 @@ const fetchBookedDevices = useCallback(async () => {
       device.name.includes(pulse)
     );
     const isPC = device.name.includes("PC");
+    const bias = device.name.includes("Bias");
 
     // Timer script that will receive updates from parent window
     const timerScript = `
