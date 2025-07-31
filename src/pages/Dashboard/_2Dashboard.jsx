@@ -94,15 +94,14 @@ const Dashboard = () => {
   const deviceIdParam = queryParams.get("device");
   const ipTypesParam = queryParams.get("ip_type");
   const reservationIdParam = queryParams.get("reservation");
-  
 
   const driverTypes = {
     ct1_ip: { name: "CT", iconType: "ThermoCamIcon" },
-    pc_ip: { name: "PC", iconType: "MonitorSmartphone" },
+    pc_ip: { name: "Virtual Desk", iconType: "MonitorSmartphone" },
     pulse1_ip: { name: "Pulse", iconType: "ChartColumnStacked" },
     usb_ip: { name: "USB Over Network", iconType: "UsbIcon" },
     system_ip: { name: "System State Control", iconType: "CpuIcon" },
-    bias_ip: { name: "Bias Flashing", iconType: "ZapIcon" },
+    bias_ip: { name: "Firm Flashing", iconType: "ZapIcon" },
     os_ip: { name: "OS Flashing", iconType: "HardDriveIcon" },
     cmd_ip: { name: "Command Prompt", iconType: "TerminalIcon" },
     audio_ip: { name: "Audio Transmission", iconType: "Volume2Icon" },
@@ -149,7 +148,7 @@ const Dashboard = () => {
           );
 
           if (matchedDevice) {
-            setDeviceEndTime(new Date(matchedDevice.end_time));
+            setDeviceEndTime(new Date(matchedDevice.time.end));
 
             // Get all available IP types from the device
             const ipTypes = Object.keys(matchedDevice.device)
@@ -179,6 +178,8 @@ const Dashboard = () => {
             if (matchedDevice.device.rutomatrix_ip) {
               const rutomatrixIp = matchedDevice.device.rutomatrix_ip;
               const subDrivers = [
+                { name: "Stream 1", endpoint: "stream1", icon: "VideoIcon" },
+                { name: "Stream 2", endpoint: "stream2", icon: "VideoIcon" },
                 { name: "USB Over Network", endpoint: "usb", icon: "UsbIcon" },
                 {
                   name: "System State Control",
@@ -193,8 +194,6 @@ const Dashboard = () => {
                   endpoint: "audio",
                   icon: "Volume2Icon",
                 },
-                { name: "Stream 1", endpoint: "stream1", icon: "VideoIcon" },
-                { name: "Stream 2", endpoint: "stream2", icon: "VideoIcon" },
                 {
                   name: "Post Code Reading",
                   endpoint: "post_code",
@@ -277,118 +276,121 @@ const Dashboard = () => {
     return () => window.removeEventListener("message", handleMessage);
   }, []);
 
-const openDeviceWindow = async (deviceId, ipInfo = null) => {
-  const device = selectedDevices.find((d) => d.id === deviceId);
-  if (!device) {
-    console.warn("No matching device found.");
-    return;
-  }
+  const openDeviceWindow = async (deviceId, ipInfo = null) => {
+    const device = selectedDevices.find((d) => d.id === deviceId);
+    if (!device) {
+      console.warn("No matching device found.");
+      return;
+    }
 
-  // Use the component's deviceEndTime state
-  if (!deviceEndTime) {
-    console.warn("No end time available for this device");
-    return;
-  }
-  console.log("deviceEndTime:", deviceEndTime, typeof deviceEndTime);
+    // Use the component's deviceEndTime state
+    if (!deviceEndTime) {
+      console.warn("No end time available for this device");
+      return;
+    }
 
-  const Timer = ({ end, deviceName, onExpired, isPopup = false }) => {
-    const timerRef = useRef(null);
-    const alertShownRef = useRef({
-      thirtyMinutes: false,
-      tenMinutes: false,
-      expired: false,
-    });
-
-    const playAlertSound = () => {
-      try {
-        const audio = new Audio(
-          "https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3"
-        );
-        audio.volume = 0.3;
-        audio.play().catch((e) => console.log("Audio play failed:", e));
-      } catch (e) {
-        console.log("Audio error:", e);
-      }
-    };
-
-    const showAlert = async (message) => {
-      return new Promise((resolve) => {
-        if (!alertShownRef.current.isAlertActive) {
-          alertShownRef.current.isAlertActive = true;
-          playAlertSound();
-          alert(message);
-          alertShownRef.current.isAlertActive = false;
-          resolve();
-        }
-      });
-    };
-
-    const startCountdown = () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-
-      alertShownRef.current = {
+    const Timer = ({ end, deviceName, onExpired, isPopup = false }) => {
+      const timerRef = useRef(null);
+      const alertShownRef = useRef({
         thirtyMinutes: false,
         tenMinutes: false,
         expired: false,
-        isAlertActive: false,
+      });
+
+      const playAlertSound = () => {
+        try {
+          const audio = new Audio(
+            "https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3"
+          );
+          audio.volume = 0.3;
+          audio.play().catch((e) => console.log("Audio play failed:", e));
+        } catch (e) {
+          console.log("Audio error:", e);
+        }
       };
 
-      timerRef.current = setInterval(async () => {
-        const now = new Date();
-        const difference = end - now;
-        const minutesLeft = Math.floor(difference / (1000 * 60));
-
-        if (difference <= 0) {
-          clearInterval(timerRef.current);
-          if (!alertShownRef.current.expired) {
-            await showAlert(`Your booking for ${deviceName} has expired!`);
-            alertShownRef.current.expired = true;
-            if (onExpired) onExpired();
+      const showAlert = async (message) => {
+        return new Promise((resolve) => {
+          if (!alertShownRef.current.isAlertActive) {
+            alertShownRef.current.isAlertActive = true;
+            playAlertSound();
+            alert(message);
+            alertShownRef.current.isAlertActive = false;
+            resolve();
           }
-        } else if (minutesLeft === 10 && !alertShownRef.current.tenMinutes) {
-          await showAlert(`Warning: Only 10 minutes left for ${deviceName}`);
-          alertShownRef.current.tenMinutes = true;
-        } else if (
-          minutesLeft === 30 &&
-          !alertShownRef.current.thirtyMinutes
-        ) {
-          await showAlert(`Warning: Only 30 minutes left for ${deviceName}`);
-          alertShownRef.current.thirtyMinutes = true;
-        }
-      }, 1000);
-    };
+        });
+      };
 
-    useEffect(() => {
-      if (end) {
-        startCountdown();
-      }
-
-      return () => {
+      const startCountdown = () => {
         if (timerRef.current) {
           clearInterval(timerRef.current);
         }
+
+        alertShownRef.current = {
+          thirtyMinutes: false,
+          tenMinutes: false,
+          expired: false,
+          isAlertActive: false,
+        };
+
+        timerRef.current = setInterval(async () => {
+          const now = new Date();
+          const difference = end - now;
+          const minutesLeft = Math.floor(difference / (1000 * 60));
+
+          if (difference <= 0) {
+            clearInterval(timerRef.current);
+            if (!alertShownRef.current.expired) {
+              await showAlert(`Your booking for ${deviceName} has expired!`);
+              alertShownRef.current.expired = true;
+              if (onExpired) onExpired();
+            }
+          } else if (minutesLeft === 10 && !alertShownRef.current.tenMinutes) {
+            await showAlert(`Warning: Only 10 minutes left for ${deviceName}`);
+            alertShownRef.current.tenMinutes = true;
+          } else if (
+            minutesLeft === 30 &&
+            !alertShownRef.current.thirtyMinutes
+          ) {
+            await showAlert(`Warning: Only 30 minutes left for ${deviceName}`);
+            alertShownRef.current.thirtyMinutes = true;
+          }
+        }, 1000);
       };
-    }, [end]);
 
-    return null; // This component doesn't render anything
-  };
+      useEffect(() => {
+        if (end) {
+          startCountdown();
+        }
 
-  const ipType = ipInfo?.ip_type || "";
-  const ipAddress = ipInfo?.ip_address || "";
-  const deviceName = ipInfo?.device_name || "";
-  const title = `Rutomatrix &#x2022; ${deviceName} - ${ipType}`;
+        return () => {
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+          }
+        };
+      }, [end]);
 
-  const isCT = ["CT"].some((ct) => device.name.includes(ct));
-  const isPulse = ["Pulse"].some((pulse) => device.name.includes(pulse));
-  const isPC = device.name.includes("PC");
-  const isAudio = ["Audio"].some((audio_ip) =>
-    device.name.includes(audio_ip)
-  );
+      return null; // This component doesn't render anything
+    };
 
-  // Timer script that will receive updates from parent window
-  const timerScript = `
+    const ipType = ipInfo?.ip_type || "";
+    const ipAddress = ipInfo?.ip_address || "";
+    const deviceName = ipInfo?.device_name || "";
+    const title = `Rutomatrix &#x2022; ${deviceName}  ${ipType}`;
+    const isAudio = ["Audio"].some((audio_ip) =>
+      device.name.includes(audio_ip)
+    );
+    const isCT = ["CT"].some((ct) => device.name.includes(ct));
+    const isPulse = ["Pulse"].some((pulse) => device.name.includes(pulse));
+    const isPC = device.name.includes("Virtual");
+    const isFirmware = device.name.includes("Firmware");
+    const isOs = device.name.includes("OS");
+    const isPostcode = device.name.includes("Post");
+    const isSystemInfo = device.name.includes("System");
+    const isUsbSharing = device.name.includes("USB");
+
+    // Timer script that will receive updates from parent window
+    const timerScript = `
     <script>
       // Function to update timer display
       function updateTimer(timeLeft, isLast10Minutes) {
@@ -417,7 +419,7 @@ const openDeviceWindow = async (deviceId, ipInfo = null) => {
     </script>
   `;
 
-  const postMessageScript = `
+    const postMessageScript = `
     <script>
       window.addEventListener('load', () => {
         window.opener.postMessage(
@@ -1873,7 +1875,7 @@ const openDeviceWindow = async (deviceId, ipInfo = null) => {
   </script>
 </body>
 </html>`;
-    } else if (device.name.includes("PC")) {
+    } else if (isPC || isOs) {
       popupHTML = `<!DOCTYPE html>
 <html>
 <head>
@@ -2082,12 +2084,6 @@ const openDeviceWindow = async (deviceId, ipInfo = null) => {
           </svg>
           Connect
         </button>
-        <!--<button class="control-btn" id="fullscreen-btn">
-          <svg viewBox="0 0 24 24" width="16" height="16">
-            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-          Fullscreen
-        </button> -->
       </div>
     </div>
 
@@ -2181,15 +2177,15 @@ const openDeviceWindow = async (deviceId, ipInfo = null) => {
         } else {
           if (document.exitFullscreen) {
             document.exitFullscreen();
-          }
+            }
         }
       });
     });
   </script>
 </body>
 </html>`;
-} else if (isAudio) {
-    popupHTML = `<!DOCTYPE html>
+    } else if (isAudio) {
+      popupHTML = `<!DOCTYPE html>
 <html>
 <head>
   <title>${title}</title>
@@ -2489,6 +2485,8 @@ const AudioStreamPage = () => {
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(1);
+  const [streamUrl, setStreamUrl] = useState("");
+  const [connectionStatus, setConnectionStatus] = useState("Disconnected");
 
   const audioRef = useRef(null);
   const canvasRef = useRef(null);
@@ -2501,30 +2499,57 @@ const AudioStreamPage = () => {
     return \`\${minutes}:\${seconds < 10 ? '0' : ''}\${seconds}\`;
   };
 
-  const handleConnect = () => {
+  const handleConnect = async () => {
     const sourceDropdown = document.getElementById('audio-source-select');
     const selected = sourceDropdown && sourceDropdown.value || '';
+
     if (!selected) return;
 
     setSelectedSource(selected);
-    setIsConnected(true);
+    setConnectionStatus("Connecting...");
 
-    setTimeout(() => {
-      setIsPlaying(true);
-      if (audioRef.current) {
-        audioRef.current.volume = volume / 100;
-        audioRef.current.play().catch(e => console.error("Audio play failed:", e));
+    try {
+      let apiUrl;
+      if (selected === "HDMI") {
+        apiUrl = "http://100.68.107.103:7123";
+      } else if (selected === "Bluetooth") {
+        apiUrl = "YOUR_BLUETOOTH_ENDPOINT";
       }
-    }, 500);
+
+      // Test connection
+      const response = await fetch(apiUrl, { method: 'HEAD' });
+      if (!response.ok) throw new Error("Connection failed");
+
+      setStreamUrl(apiUrl);
+      setIsConnected(true);
+      setConnectionStatus("Connected");
+
+      // Auto-play after short delay
+      setTimeout(() => {
+        setIsPlaying(true);
+        if (audioRef.current) {
+          audioRef.current.src = apiUrl;
+          audioRef.current.volume = volume / 100;
+          audioRef.current.play().catch(e => {
+            console.error("Audio play failed:", e);
+            setConnectionStatus("Playback Error");
+          });
+        }
+      }, 500);
+
+    } catch (error) {
+      console.error("Connection failed:", error);
+      setConnectionStatus("Connection Failed");
+      setIsConnected(false);
+    }
   };
 
   const handlePlayPause = () => {
-    if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.pause();
-      } else {
-        audioRef.current.play().catch(e => console.error("Audio play failed:", e));
-      }
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play().catch(e => console.error("Play error:", e));
     }
     setIsPlaying(!isPlaying);
   };
@@ -2590,10 +2615,13 @@ const AudioStreamPage = () => {
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
+    
     const updateTime = () => setCurrentTime(audio.currentTime);
     const updateDuration = () => setDuration(audio.duration || 1);
+    
     audio.addEventListener('timeupdate', updateTime);
     audio.addEventListener('loadedmetadata', updateDuration);
+    
     return () => {
       audio.removeEventListener('timeupdate', updateTime);
       audio.removeEventListener('loadedmetadata', updateDuration);
@@ -2606,10 +2634,15 @@ const AudioStreamPage = () => {
 
       {!isConnected ? (
         <div className="no-feed">
-          <p>No feed available</p>
+          <p>{connectionStatus}</p>
         </div>
       ) : (
         <div className="audio-feed">
+          <div className="connection-status">
+            <span>Connected to: {selectedSource}</span>
+            <span>Status: {connectionStatus}</span>
+          </div>
+          
           <div className="audio-visualization">
             <canvas ref={canvasRef} width="600" height="150" />
           </div>
@@ -2654,7 +2687,7 @@ const AudioStreamPage = () => {
             </div>
           </div>
 
-          <audio ref={audioRef} loop src="https://stream.example.com/audio" />
+          <audio ref={audioRef} loop src={streamUrl} />
         </div>
       )}
     </div>
@@ -2687,6 +2720,844 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>`;
+    } else if (isFirmware) {
+      popupHTML = `<!DOCTYPE html>
+<html>
+<head>
+  <title>Firmware Flashing</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #151618;
+      color: #FFFFFF;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      background: #1E1E1E;
+      border-radius: 12px;
+      padding: 40px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      min-width: 500px;
+      max-width: 600px;
+      text-align: center;
+    }
+
+    .header {
+      margin-bottom: 40px;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      font-weight: 600;
+      color: #FFFFFF;
+      margin: 0;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      color: #BBBBBB;
+      font-size: 16px;
+      margin: 0;
+    }
+
+    .buttons-section {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+    }
+
+    .action-btn {
+      background: #2A2A2A;
+      border: none;
+      color: #FFFFFF;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 500;
+      transition: background 0.3s ease, transform 0.2s ease;
+      min-width: 140px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .action-btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .action-btn:active {
+      transform: scale(0.96) translateY(1px);
+    }
+
+    .detect-btn {
+      background: #ff6a00;
+    }
+
+    .detect-btn:hover {
+      background: #e55d00;
+    }
+
+    .read-btn {
+      background: #0971b3;
+    }
+
+    .read-btn:hover {
+      background: #0862a0;
+    }
+
+    .write-btn {
+      background: #0971b3;
+    }
+
+    .write-btn:hover {
+      background: #0862a0;
+    }
+
+    .upload-section {
+      margin-top: 20px;
+    }
+
+    .upload-label {
+      display: block;
+      font-size: 16px;
+      font-weight: 500;
+      margin-bottom: 12px;
+      color: #FFFFFF;
+    }
+
+    .file-input-wrapper {
+      position: relative;
+      display: inline-block;
+      cursor: pointer;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .file-input {
+      opacity: 0;
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+
+    .file-input-display {
+      background: #2A2A2A;
+      border: 2px dashed #555;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      transition: border-color 0.3s ease, background 0.3s ease;
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .file-input-display:hover {
+      border-color: #ff6a00;
+      background: #333;
+    }
+
+    .file-input-display.dragover {
+      border-color: #ff6a00;
+      background: #333;
+    }
+
+    .upload-icon {
+      font-size: 24px;
+      color: #BBBBBB;
+    }
+
+    .upload-text {
+      color: #BBBBBB;
+      font-size: 14px;
+    }
+
+    .selected-file {
+      color: #ff6a00;
+      font-weight: 500;
+    }
+
+    .status-section {
+      margin-top: 30px;
+      padding: 16px;
+      background: #252525;
+      border-radius: 8px;
+      min-height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .status-text {
+      color: #BBBBBB;
+      font-size: 14px;
+    }
+
+    .status-success {
+      color: #4CAF50;
+    }
+
+    .status-error {
+      color: #f44336;
+    }
+
+    .status-info {
+      color: #2196F3;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 4px;
+      background: #333;
+      border-radius: 2px;
+      margin-top: 10px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: #ff6a00;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        min-width: auto;
+        max-width: 90%;
+        padding: 30px 20px;
+      }
+
+      .buttons-section {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .action-btn {
+        width: 100%;
+        max-width: 250px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Firmware Flashing</h1>
+      <p>Detect, read, and write firmware to your device</p>
+    </div>
+
+    <div class="buttons-section">
+      <button class="action-btn detect-btn" id="detect-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="m21 21-4.35-4.35"/>
+        </svg>
+        Detect Chip
+      </button>
+      
+      <button class="action-btn read-btn" id="read-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14,2 14,8 20,8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10,9 9,9 8,9"/>
+        </svg>
+        Read Flashrom
+      </button>
+      
+      <button class="action-btn write-btn" id="write-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14,2 14,8 20,8"/>
+          <line x1="12" y1="18" x2="12" y2="12"/>
+          <polyline points="9,15 12,12 15,15"/>
+        </svg>
+        Upload Flashrom
+      </button>
+    </div>
+
+    <div class="upload-section">
+      <label class="upload-label">Select Firmware File</label>
+      <div class="file-input-wrapper">
+        <input type="file" class="file-input" id="firmware-file" accept=".bin,.rom,.hex,.img">
+        <div class="file-input-display" id="file-display">
+          <div class="upload-icon">📁</div>
+          <div class="upload-text">Click to browse or drag & drop firmware file</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="status-section">
+      <div class="status-text" id="status-text">Ready to start firmware operations</div>
+      <div class="progress-bar hidden" id="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // DOM elements
+    const detectBtn = document.getElementById('detect-btn');
+    const readBtn = document.getElementById('read-btn');
+    const writeBtn = document.getElementById('write-btn');
+    const fileInput = document.getElementById('firmware-file');
+    const fileDisplay = document.getElementById('file-display');
+    const statusText = document.getElementById('status-text');
+    const progressBar = document.getElementById('progress-bar');
+    const progressFill = document.getElementById('progress-fill');
+
+    let selectedFile = null;
+
+    // File input handling
+    fileInput.addEventListener('change', handleFileSelect);
+    fileDisplay.addEventListener('click', () => fileInput.click());
+    fileDisplay.addEventListener('dragover', handleDragOver);
+    fileDisplay.addEventListener('dragleave', handleDragLeave);
+    fileDisplay.addEventListener('drop', handleFileDrop);
+
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      updateFileDisplay(file);
+    }
+
+    function handleDragOver(event) {
+      event.preventDefault();
+      fileDisplay.classList.add('dragover');
+    }
+
+    function handleDragLeave(event) {
+      event.preventDefault();
+      fileDisplay.classList.remove('dragover');
+    }
+
+    function handleFileDrop(event) {
+      event.preventDefault();
+      fileDisplay.classList.remove('dragover');
+      const file = event.dataTransfer.files[0];
+      fileInput.files = event.dataTransfer.files;
+      updateFileDisplay(file);
+    }
+
+    function updateFileDisplay(file) {
+      if (file) {
+        selectedFile = file;
+        const fileSize = (file.size / 1024 / 1024).toFixed(2);
+        fileDisplay.innerHTML = '
+          <div class="upload-icon">✓</div>
+          <div class="selected-file">File Name</div>
+          <div class="upload-text">10 MB</div>
+        ';
+      } else {
+        selectedFile = null;
+        fileDisplay.innerHTML = '
+          <div class="upload-icon">📁</div>
+          <div class="upload-text">Click to browse or drag & drop firmware file</div>
+        ';
+      }
+    }
+
+    // Button event handlers
+    detectBtn.addEventListener('click', detectChip);
+    readBtn.addEventListener('click', readFlashrom);
+    writeBtn.addEventListener('click', uploadFlashrom);
+
+    function detectChip() {
+      updateStatus('Detecting chip...', 'info');
+      showProgress();
+      disableButtons();
+
+      // Simulate detection process
+      simulateProgress(3000, () => {
+        updateStatus('Chip detected: W25Q64FV (8MB)', 'success');
+        hideProgress();
+        enableButtons();
+      });
+    }
+
+    function readFlashrom() {
+      updateStatus('Reading flashrom...', 'info');
+      showProgress();
+      disableButtons();
+
+      // Simulate read process
+      simulateProgress(5000, () => {
+        updateStatus('Flashrom read successfully. Downloaded as backup.bin', 'success');
+        hideProgress();
+        enableButtons();
+      });
+    }
+
+    function uploadFlashrom() {
+      if (!selectedFile) {
+        updateStatus('Please select a firmware file first', 'error');
+        return;
+      }
+
+      updateStatus('Uploading...', 'info');
+      showProgress();
+      disableButtons();
+
+      // Simulate upload process
+      simulateProgress(7000, () => {
+        updateStatus('Firmware uploaded successfully!', 'success');
+        hideProgress();
+        enableButtons();
+      });
+    }
+
+    function updateStatus(message, type = '') {
+      statusText.textContent = message;
+      statusText.className = 'status-text';
+      if (type) {
+        statusText.classList.add('status-');
+      }
+    }
+
+    function showProgress() {
+      progressBar.classList.remove('hidden');
+      progressFill.style.width = '0%';
+    }
+
+    function hideProgress() {
+      progressBar.classList.add('hidden');
+      progressFill.style.width = '0%';
+    }
+
+    function simulateProgress(duration, callback) {
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += Math.random() * 15;
+        if (progress >= 100) {
+          progress = 100;
+          clearInterval(interval);
+          setTimeout(callback, 500);
+        }
+        progressFill.style.width = progress + '%';
+      }, duration / 20);
+    }
+
+    function disableButtons() {
+      detectBtn.disabled = true;
+      readBtn.disabled = true;
+      writeBtn.disabled = true;
+      detectBtn.style.opacity = '0.6';
+      readBtn.style.opacity = '0.6';
+      writeBtn.style.opacity = '0.6';
+    }
+
+    function enableButtons() {
+      detectBtn.disabled = false;
+      readBtn.disabled = false;
+      writeBtn.disabled = false;
+      detectBtn.style.opacity = '1';
+      readBtn.style.opacity = '1';
+      writeBtn.style.opacity = '1';
+    }
+  </script>
+</body>
+</html>`;
+    } else if (isPostcode) {
+      popupHTML = `<!DOCTYPE html>
+<html>
+<head>
+  <title>${title}</title>
+  ${postMessageScript}
+  ${timerScript}
+  <style>
+body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #121212;
+      color: #FFFFFF;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .postcode-container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      padding: 16px;
+      box-sizing: border-box;
+      gap: 16px;
+      max-width: 2000px;
+      margin: 0 auto;
+    }
+    
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: #1E1E1E;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .device-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+     .device-name-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #device-timer {
+      margin-left: 10px;
+    }
+
+    .device-name {
+      font-size: 18px;
+      font-weight: 600;
+      color: #FF6A00;
+      white-space: normal;
+      overflow: visible;
+      text-overflow: unset;
+      word-break: break-word;
+      line-height: 1.2;
+      text-align: center;
+    }
+
+    .title {
+      font-size: 24px;
+      font-weight: 600;
+      color: #FFFFFF;
+    }
+
+    .launch-btn {
+      background: #ff6a00;
+      border: none;
+      color: #FFFFFF;
+      padding: 12px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background 0.3s ease;
+    }
+
+    .launch-btn:hover {
+      background: #e55a00;
+    }
+
+    .launch-btn:disabled {
+      background: #666;
+      cursor: not-allowed;
+    }
+
+    .main-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      margin-top: 80px;
+      width: 100%;
+    }
+
+    .postcode-display {
+      background: #1E1E1E;
+      border: 2px solid #0971b3;
+      border-radius: 12px;
+      padding: 40px;
+      margin: 20px;
+      min-width: 300px;
+      min-height: 200px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .postcode-label {
+      font-size: 18px;
+      color: #BBBBBB;
+      margin-bottom: 15px;
+    }
+
+    .postcode-value {
+      font-size: 36px;
+      font-weight: bold;
+      color: #ff6a00;
+      letter-spacing: 2px;
+      font-family: 'Courier New', monospace;
+    }
+
+    .status-message {
+      font-size: 16px;
+      color: #BBBBBB;
+      margin-top: 20px;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: #ff6a00;
+      animation: spin 1s ease-in-out infinite;
+      margin-right: 10px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 768px) {
+      .header {
+        padding: 15px 20px;
+      }
+      
+      .title {
+        font-size: 20px;
+      }
+      
+      .launch-btn {
+        padding: 10px 20px;
+        font-size: 14px;
+      }
+      
+      .postcode-display {
+        margin: 10px;
+        padding: 30px;
+        min-width: 250px;
+      }
+      
+      .postcode-value {
+        font-size: 28px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="postcode-container">
+    <div class="header">
+        <div class="device-info">
+          <div class="device-name-row">
+            <div class="device-name">${device.name}</div>
+            <div id="device-timer">--:--:--</div>
+          </div>
+        </div>
+        <div class="controls">
+          <button class="launch-btn" id="launch-btn">Launch</button>
+        </div>
+      </div>
+
+  <div class="main-content">
+    <div class="postcode-display">
+      <div class="postcode-label">Post Code</div>
+      <div class="postcode-value" id="postcode-value">---</div>
+      <div class="status-message" id="status-message">Click Launch to read post code</div>
+    </div>
+  </div>
+ </div> 
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const launchBtn = document.getElementById('launch-btn');
+      const postcodeValue = document.getElementById('postcode-value');
+      const statusMessage = document.getElementById('status-message');
+
+      launchBtn.addEventListener('click', async () => {
+        // Disable button and show loading state
+        launchBtn.disabled = true;
+        launchBtn.innerHTML = '<span class="loading"></span>Reading...';
+        
+        // Update status
+        statusMessage.textContent = 'Reading post code...';
+        postcodeValue.textContent = '---';
+
+        try {
+          // Simulate post code reading process
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          // Generate random post code for demo
+          const postcodes = ['SW1A 1AA', 'M1 1AA', 'B33 8TH', 'W1A 0AX', 'E1 6AN'];
+          const randomPostcode = postcodes[Math.floor(Math.random() * postcodes.length)];
+          
+          // Display result
+          postcodeValue.textContent = randomPostcode;
+          statusMessage.textContent = 'Post code read successfully';
+          
+        } catch (error) {
+          console.error('Error reading post code:', error);
+          postcodeValue.textContent = 'ERROR';
+          statusMessage.textContent = 'Failed to read post code';
+        } finally {
+          // Re-enable button
+          launchBtn.disabled = false;
+          launchBtn.textContent = 'Launch';
+        }
+      });
+    });
+  </script>
+</body>
+</html>`;
+    } else if (isSystemInfo || isUsbSharing) {
+      let deviceIp = device.ipAddress.split("/")[0];
+      let iframeURL = "";
+
+      if (isSystemInfo) {
+        iframeURL = `http://${deviceIp}:8000/`;
+      } else if (isUsbSharing) {
+        iframeURL = `http://${deviceIp}:8080/`;
+      }
+
+      popupHTML = `<!DOCTYPE html>
+<html>
+<head>
+  <title>${title}</title>
+  ${postMessageScript}
+  ${timerScript}
+  <style>
+      body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #121212;
+      color: #FFFFFF;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .stream_state_control-container {
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      box-sizing: border-box;
+      max-width: 2000px;
+      margin: 80px auto 0 auto; /* adds top margin to push content below fixed header */
+      align-items: center;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: #1E1E1E;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      position: fixed;
+      top: 15px;
+      left: 15px;
+      right: 15px;
+    }
+
+    .device-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+     .device-name-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #device-timer {
+      margin-left: 10px;
+    }
+
+    .device-name {
+      font-size: 18px;
+      font-weight: 600;
+      color: #FF6A00;
+      white-space: normal;
+      overflow: visible;
+      text-overflow: unset;
+      word-break: break-word;
+      line-height: 1.2;
+      text-align: center;
+    }
+
+    .message {
+      font-size: 1.5rem;
+      color: #f44336;
+    }
+    iframe {
+      width: 100%;
+      height: calc(100vh - 150px);
+      border: none;
+      max-width: 2000px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+  </style>
+</head>
+<body>
+<div class="stream_state_control-container">
+      <div class="header">
+        <div class="device-info">
+          <div class="device-name-row">
+            <div class="device-name">${device.name}</div>
+            <div id="device-timer">--:--:--</div>
+          </div>
+        </div>
+      </div>
+    <div id="message" class="message"></div>
+    <iframe id="content-frame" src=""></iframe>
+</div>
+
+<script>
+  const iframe = document.getElementById('content-frame');
+  const messageDiv = document.getElementById('message');
+  const url = '${iframeURL}';
+
+  if (!url) {
+    messageDiv.textContent = 'Unable to get response from the API';
+  } else {
+    iframe.src = url;
+
+    let timeout = setTimeout(() => {
+      messageDiv.textContent = 'No response';
+      iframe.style.display = 'none';
+    }, 5000); // wait 5 seconds for content to load
+
+    iframe.onload = () => {
+      clearTimeout(timeout);
+      iframe.style.display = 'block';
+      messageDiv.style.display = 'none';
+    };
+
+    iframe.onerror = () => {
+      clearTimeout(timeout);
+      messageDiv.textContent = 'No response';
+    };
+  }
+</script>
+
+</body>
+</html>`;
     } else {
       popupHTML = `<!DOCTYPE html>
 <html>
@@ -2717,75 +3588,76 @@ document.addEventListener('DOMContentLoaded', () => {
 </body>
 </html>`;
     }
- const blob = new Blob([popupHTML], { type: "text/html" });
-  const url = URL.createObjectURL(blob);
+    const blob = new Blob([popupHTML], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
 
-  const popup = window.open(
-    url,
-    `device_${deviceId}`,
-    "width=1000,height=700,left=100,top=100,resizable=yes"
-  );
+    const popup = window.open(
+      url,
+      `device_${deviceId}`,
+      "width=1000,height=700,left=100,top=100,resizable=yes"
+    );
 
-  if (!popup) {
-    URL.revokeObjectURL(url);
-    alert("Please allow popups for this site");
-    return;
-  }
+    if (!popup) {
+      URL.revokeObjectURL(url);
+      alert("Please allow popups for this site");
+      return;
+    }
 
-  // Timer update function to send to popup
-  const updatePopupTimer = () => {
-    if (!popup.closed && deviceEndTime) {
-      const now = new Date();
-      const end = new Date(deviceEndTime);
-      
-      // Validate the date
-      if (isNaN(end.getTime())) {
-        console.error("Invalid end time:", deviceEndTime);
-        return;
+    // Timer update function to send to popup
+    const updatePopupTimer = () => {
+      if (!popup.closed && deviceEndTime) {
+        const now = new Date();
+        const end = new Date(deviceEndTime);
+
+        // Validate the date
+        if (isNaN(end.getTime())) {
+          console.error("Invalid end time:", deviceEndTime);
+          return;
+        }
+
+        const difference = end - now;
+        const minutesLeft = Math.floor(difference / (1000 * 60));
+
+        // Format time only if difference is positive
+        const timeLeft =
+          difference > 0
+            ? new Date(difference).toISOString().substr(11, 8)
+            : "00:00:00";
+
+        const isLast10Minutes = minutesLeft <= 10;
+
+        popup.postMessage(
+          {
+            type: "updateTimer",
+            timeLeft,
+            isLast10Minutes,
+          },
+          "*"
+        );
       }
+    };
 
-      const difference = end - now;
-      const minutesLeft = Math.floor(difference / (1000 * 60));
+    // Set up timer interval to update popup
+    const timerInterval = setInterval(updatePopupTimer, 1000);
+    updatePopupTimer(); // Initial update
 
-      // Format time only if difference is positive
-      const timeLeft = difference > 0 
-        ? new Date(difference).toISOString().substr(11, 8)
-        : "00:00:00";
+    const cleanup = () => {
+      clearInterval(timerInterval);
+      URL.revokeObjectURL(url);
+      setActiveDevices((prev) => prev.filter((id) => id !== deviceId));
+    };
 
-      const isLast10Minutes = minutesLeft <= 10;
+    popup.onbeforeunload = cleanup;
 
-      popup.postMessage(
-        {
-          type: "updateTimer",
-          timeLeft,
-          isLast10Minutes,
-        },
-        "*"
-      );
-    }
+    const checkPopupClosed = setInterval(() => {
+      if (popup.closed) {
+        clearInterval(checkPopupClosed);
+        cleanup();
+      }
+    }, 500);
+
+    setActiveDevices((prev) => [...prev, deviceId]);
   };
-
-  // Set up timer interval to update popup
-  const timerInterval = setInterval(updatePopupTimer, 1000);
-  updatePopupTimer(); // Initial update
-
-  const cleanup = () => {
-    clearInterval(timerInterval);
-    URL.revokeObjectURL(url);
-    setActiveDevices((prev) => prev.filter((id) => id !== deviceId));
-  };
-
-  popup.onbeforeunload = cleanup;
-
-  const checkPopupClosed = setInterval(() => {
-    if (popup.closed) {
-      clearInterval(checkPopupClosed);
-      cleanup();
-    }
-  }, 500);
-
-  setActiveDevices((prev) => [...prev, deviceId]);
-};
 
   return (
     <div className={`dashboard-container ${isDarkTheme ? "dark-theme" : ""}`}>
