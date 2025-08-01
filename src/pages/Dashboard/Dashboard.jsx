@@ -640,13 +640,7 @@ const Dashboard = () => {
     transition: transform 0.2s ease, filter 0.2s ease;
   }
 
-  /* Hover effect for all arrows */
-  .arrow:hover {
-    transform: scale(1.2);
-    filter: brightness(1.2);
-  }
-
-  /* Click effect (brief push-in animation) */
+/* Click effect (brief push-in animation) */
 /* Active class for keyboard-triggered highlight */
 .arrow.active {
   transform: scale(0.95);
@@ -654,6 +648,11 @@ const Dashboard = () => {
   filter: brightness(1.4);
   transition: transform 0.2s ease, filter 0.2s ease;
 }
+
+  /* Click effect (brief push-in animation) */
+  .arrow:active {
+    transform: scale(0.9);
+  }
 
   .arrow.up {
     border-width: 0 20px 20px 20px;
@@ -981,7 +980,7 @@ const Dashboard = () => {
       <div class="device-info">
         <div class="device-name-row">
           <div class="device-name">${device.name}</div>
-          <div id="device-timer">--:--:--</div>
+          <div id="device-timer"></div>
         </div>
         <div class="ip-display">
           IP: ${ipAddress || "Not available"}
@@ -1193,37 +1192,47 @@ const Dashboard = () => {
             testConnection(thermalVerifiedAPI)
           ]);
 
-           resetBtn.addEventListener('click', async () => {
-        resetBtn.disabled = true;
-        resetBtn.textContent = 'Resetting...';
+resetBtn.addEventListener('click', async () => {
+  resetBtn.disabled = true;
+  resetBtn.textContent = 'Resetting...';
 
-        try {
-          const [stopCameraRes, stopThermalRes] = await Promise.all([
-            fetch(stopCameraAPI, { method: 'GET' }),
-            fetch(stopThermalAPI, { method: 'GET' })
-          ]);
+  try {
+    const [stopCameraRes, stopThermalRes] = await Promise.all([
+      fetch(stopCameraAPI, { method: 'GET' }),
+      fetch(stopThermalAPI, { method: 'GET' })
+    ]);
 
-          if (stopCameraRes.ok && stopThermalRes.ok) {
-            showAlert('success', 'Reset completed successfully.');
-            resetBtn.classList.add('hidden'); // Hide button after successful reset
-          } else {
-            showAlert('error', 'Reset failed. Please check server.');
-          }
-        } catch (error) {
-          console.error('Reset failed:', error);
-          showAlert('error', 'Reset failed due to network error.');
-        } finally {
-          resetBtn.disabled = false;
-          resetBtn.textContent = 'Reset';
-        }
-      });
+        if (stopCameraRes.ok && stopThermalRes.ok) {
+          showAlert('success', 'Reset completed successfully.');
+          resetBtn.classList.add('hidden'); // Hide button after successful reset
           
-      if (!cameraReachable || !thermalReachable) {
-        throw new Error('Servers unreachable: Camera ' + (cameraReachable ? 'OK' : 'DOWN') + 
-                      ', Thermal ' + (thermalReachable ? 'OK' : 'DOWN'));
-          resetBtn.classList.remove('hidden');  // Show Reset button
+          // Reset the stream button to initial state
+          resetStreamButton();
+          
+          // Also reset verification state
+          isCorsVerified = false;
+          refreshBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" fill="currentColor"/></svg>';
+          refreshBtn.disabled = false;
+          streamBtn.style.backgroundColor = '#ff4444';
+        } else {
+          showAlert('error', 'Reset failed. Please check server.');
+        }
+      } catch (error) {
+        console.error('Reset failed:', error);
+        showAlert('error', 'Reset failed due to network error.');
+      } finally {
+        resetBtn.disabled = false;
+        resetBtn.textContent = 'Reset';
       }
-
+    });
+          
+        // Show resetBtn only if either is unreachable
+        if (!cameraReachable || !thermalReachable) {
+          resetBtn.classList.remove('hidden'); // Show Reset button
+        } else {
+          resetBtn.classList.add('hidden'); // Hide Reset button
+        }
+  
           // Then verify endpoints
           const [cameraResponse, thermalResponse] = await Promise.all([
             fetch(cameraVerifiedAPI, { 
@@ -1399,6 +1408,7 @@ const Dashboard = () => {
         streamBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16"><path d="M16 16v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v4m4-4v16" fill="none" stroke="currentColor" stroke-width="2"/></svg> Start Stream';
         streamBtn.style.backgroundColor = '#ff4444';
         isFirstClick = true;
+        isStreaming = false;
       }
 
       function showAlert(type, message) {
@@ -1426,7 +1436,7 @@ const Dashboard = () => {
     //Servo Control Script
     const SERVER = "http://100.68.107.103:8003";  //RPi backend URL
 
-    let servoRunning = false;   // Track state
+    let servoRunning = false;  // Track state
 
     const controlBtn = document.getElementById('servo-toggle-btn');
 
@@ -1511,7 +1521,7 @@ const Dashboard = () => {
       });
     });
 
-  document.addEventListener('keydown', (event) => {
+     document.addEventListener('keydown', (event) => {
   if (!servoRunning) return;
 
   let arrow = null;
@@ -1560,7 +1570,6 @@ const Dashboard = () => {
 
   if (arrow) highlightArrow(arrow);
 });
-
 
     function sendServoCommand(axis, angle) {
       fetch(SERVER + "/servo?axis=" + axis + "&angle=" + angle)
@@ -1689,12 +1698,16 @@ const Dashboard = () => {
       overflow: hidden;
       display: flex;
       flex-direction: column;
+      position: relative;
     }
     
     .pulse-viewer-header {
       padding: 8px 12px;
       background: rgba(0,0,0,0.3);
       font-size: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
     
     .pulse-viewer-content {
@@ -1714,6 +1727,36 @@ const Dashboard = () => {
       width: 100%;
       height: 100%;
       border: none;
+    }
+    
+    .viewer-actions {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .viewer-action-btn {
+      background: transparent;
+      border: none;
+      color: #BBBBBB;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      transition: all 0.2s;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .viewer-action-btn:hover {
+      color: #FFFFFF;
+      background: rgba(255,255,255,0.1);
+    }
+    
+    .fullscreen-icon {
+      width: 16px;
+      height: 16px;
     }
     
     @keyframes spin {
@@ -1751,6 +1794,23 @@ const Dashboard = () => {
       opacity: 0;
       transition: opacity 0.5s;
     }
+    
+    /* Fullscreen styles */
+    .pulse-viewer-container.fullscreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 9999;
+      border-radius: 0;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .pulse-viewer-container.fullscreen .pulse-viewer-content {
+      height: calc(100% - 36px); /* Account for header height */
+    }
   </style>
 </head>
 <body>
@@ -1773,9 +1833,17 @@ const Dashboard = () => {
     </div>
  
     <div class="pulse-content">
-      <div class="pulse-viewer-container">
+      <div class="pulse-viewer-container" id="pulse-viewer-container">
         <div class="pulse-viewer-header">
           <span>PulseView</span>
+          <div class="viewer-actions">
+            <button class="viewer-action-btn" id="fullscreen-btn" title="Toggle fullscreen">
+              <svg class="fullscreen-icon" viewBox="0 0 24 24" id="fullscreen-icon">
+                <path d="M7 7h4V5H5v6h2V7zm10 0h-4V5h6v6h-2V7zm-10 10h4v2H5v-6h2v4zm10 0h-4v2h6v-6h-2v4z" 
+                      stroke="currentColor" fill="none" stroke-width="1.5"/>
+              </svg>
+            </button>
+          </div>
         </div>
         <div class="pulse-viewer-content">
           <div class="pulse-viewer-placeholder" id="pulse-viewer-feed">PulseView not launched</div>
@@ -1794,6 +1862,9 @@ const Dashboard = () => {
       const launchBtn = document.getElementById('launch-btn');
       const pulseViewerFeed = document.getElementById('pulse-viewer-feed');
       const pulseViewerIframe = document.getElementById('pulse-viewer-iframe');
+      const fullscreenBtn = document.getElementById('fullscreen-btn');
+      const fullscreenIcon = document.getElementById('fullscreen-icon');
+      const pulseViewerContainer = document.getElementById('pulse-viewer-container');
       const ipAddress = "${ipAddress}";
  
       function showAlert(type, message) {
@@ -1810,7 +1881,34 @@ const Dashboard = () => {
           setTimeout(() => document.body.removeChild(alertDiv), 500);
         }, 3000);
       }
- 
+      
+      // Fullscreen functionality
+      function toggleFullscreen() {
+        if (!document.fullscreenElement) {
+          pulseViewerContainer.requestFullscreen().catch(err => {
+            console.error('Error attempting to enable fullscreen:', err);
+            showAlert('error', 'Fullscreen failed: ' + err.message);
+          });
+        } else {
+          document.exitFullscreen();
+        }
+      }
+      
+      // Update fullscreen button icon based on state
+      function updateFullscreenButton() {
+        if (document.fullscreenElement) {
+          fullscreenIcon.innerHTML = '<path d="M5 16h4v4h2v-6H5v2zm10-10h-4V2h-2v6h6V6zm-10 8h4v4h2v-6H5v2zm10-8h-4V2h-2v6h6V6z" stroke="currentColor" fill="none" stroke-width="1.5"/>';
+          fullscreenBtn.setAttribute('title', 'Exit fullscreen');
+        } else {
+          fullscreenIcon.innerHTML = '<path d="M7 7h4V5H5v6h2V7zm10 0h-4V5h6v6h-2V7zm-10 10h4v2H5v-6h2v4zm10 0h-4v2h6v-6h-2v4z" stroke="currentColor" fill="none" stroke-width="1.5"/>';
+          fullscreenBtn.setAttribute('title', 'Enter fullscreen');
+        }
+      }
+      
+      // Event listeners for fullscreen changes
+      document.addEventListener('fullscreenchange', updateFullscreenButton);
+      fullscreenBtn.addEventListener('click', toggleFullscreen);
+
       // Launch PulseView control
       launchBtn.addEventListener('click', async () => {
         if (launchBtn.textContent.includes('Launch')) {
