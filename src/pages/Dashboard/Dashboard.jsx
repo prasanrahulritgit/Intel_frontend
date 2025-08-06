@@ -20,7 +20,6 @@ import {
   VideoIcon,
   CodeIcon,
 } from "lucide-react";
-import { is } from "@react-three/fiber";
 
 const DeviceCard = ({ device, isActive, onClick, renderIcon, isDarkTheme }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -1922,24 +1921,29 @@ resetBtn.addEventListener('click', async () => {
             '</div>';
           
           try {
-            // First call the API to launch PulseView
-             console.log('response')
-            const response = testConnection1('http://100.120.49.21:10001/index.html')
-             console.log('response')
-             console.log(response)
-            const data = await response.json;
-            
-            console.log('data',data)
+             const response = await fetch(\`http://\${ipAddress}:7417/launch_pulseview\`, {
+              method: 'GET',
+              mode: 'cors',
+              headers: {
+                'Accept': 'application/json'
+              }
+            });
+ 
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+              throw new Error(data.message || 'Failed to launch PulseView');
+            }
             
             showAlert('success', 'PulseView launched successfully');
             
             // Then load the PulseView interface after a short delay to ensure it's ready
             setTimeout(() => {
-              pulseViewerIframe.src = \`http://100.120.49.21:10001/\`;
+              pulseViewerIframe.src = \`http://\${ipAddress}:7417/\`;
               pulseViewerIframe.onload = () => {
                 pulseViewerFeed.style.display = 'none';
                 pulseViewerIframe.style.display = 'block';
-                // launchBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Close PulseView';
+                launchBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Close PulseView';
                 launchBtn.classList.add('active');
               };
               
@@ -1965,27 +1969,6 @@ resetBtn.addEventListener('click', async () => {
           launchBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Launch PulseView';
           launchBtn.classList.remove('active');
         }
-
-        async function testConnection1(url) {
-        try {
-          const response = await fetch(url, {
-            method: 'GET',
-            cache: 'no-store',
-            headers: {
-            'Accept': 'application/json'}
-          });
-          const data = await response.json();
-          console.log('Parsed data:', data);
-          return data;
-        } catch (error) {
-          console.error('Connection failed for ' + url + ':', error);
-          return {
-            ok: false,
-            status: 0,
-            statusText: error.message
-          };
-        }
-      }
       });
     });
   </script>
