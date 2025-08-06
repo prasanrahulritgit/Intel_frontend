@@ -99,8 +99,8 @@ const Dashboard = () => {
     ct1_ip: { name: "CT", iconType: "ThermoCamIcon" },
     pc_ip: { name: "Virtual Desk", iconType: "MonitorSmartphone" },
     pulse1_ip: { name: "Pulse", iconType: "ChartColumnStacked" },
-    usb_ip: { name: "USB Over Network", iconType: "UsbIcon" },
-    system_ip: { name: "System State Control", iconType: "CpuIcon" },
+    usb_ip: { name: "USB File Sharing", iconType: "UsbIcon" },
+    system_ip: { name: "System State Control & ATX", iconType: "CpuIcon" },
     bias_ip: { name: "Firm Flashing", iconType: "ZapIcon" },
     os_ip: { name: "OS Flashing", iconType: "HardDriveIcon" },
     cmd_ip: { name: "Command Prompt", iconType: "TerminalIcon" },
@@ -180,13 +180,17 @@ const Dashboard = () => {
               const subDrivers = [
                 { name: "Stream 1", endpoint: "stream1", icon: "VideoIcon" },
                 { name: "Stream 2", endpoint: "stream2", icon: "VideoIcon" },
-                { name: "USB Over Network", endpoint: "usb", icon: "UsbIcon" },
+                { name: "USB File Sharing", endpoint: "usb", icon: "UsbIcon" },
                 {
-                  name: "System State Control",
+                  name: "System State Control & ATX",
                   endpoint: "systemstate_atx",
                   icon: "CpuIcon",
                 },
-                { name: "Bias Flashing", endpoint: "bias", icon: "ZapIcon" },
+                {
+                  name: "Firmware Flashing",
+                  endpoint: "bias",
+                  icon: "ZapIcon",
+                },
                 { name: "OS Flashing", endpoint: "os", icon: "HardDriveIcon" },
                 //{ name: "Command Prompt", endpoint: "cmd", icon: "TerminalIcon" },
                 {
@@ -640,13 +644,7 @@ const Dashboard = () => {
     transition: transform 0.2s ease, filter 0.2s ease;
   }
 
-  /* Hover effect for all arrows */
-  .arrow:hover {
-    transform: scale(1.2);
-    filter: brightness(1.2);
-  }
-
-  /* Click effect (brief push-in animation) */
+/* Click effect (brief push-in animation) */
 /* Active class for keyboard-triggered highlight */
 .arrow.active {
   transform: scale(0.95);
@@ -654,6 +652,11 @@ const Dashboard = () => {
   filter: brightness(1.4);
   transition: transform 0.2s ease, filter 0.2s ease;
 }
+
+  /* Click effect (brief push-in animation) */
+  .arrow:active {
+    transform: scale(0.9);
+  }
 
   .arrow.up {
     border-width: 0 20px 20px 20px;
@@ -981,7 +984,7 @@ const Dashboard = () => {
       <div class="device-info">
         <div class="device-name-row">
           <div class="device-name">${device.name}</div>
-          <div id="device-timer">--:--:--</div>
+          <div id="device-timer"></div>
         </div>
         <div class="ip-display">
           IP: ${ipAddress || "Not available"}
@@ -1193,37 +1196,47 @@ const Dashboard = () => {
             testConnection(thermalVerifiedAPI)
           ]);
 
-           resetBtn.addEventListener('click', async () => {
-        resetBtn.disabled = true;
-        resetBtn.textContent = 'Resetting...';
+resetBtn.addEventListener('click', async () => {
+  resetBtn.disabled = true;
+  resetBtn.textContent = 'Resetting...';
 
-        try {
-          const [stopCameraRes, stopThermalRes] = await Promise.all([
-            fetch(stopCameraAPI, { method: 'GET' }),
-            fetch(stopThermalAPI, { method: 'GET' })
-          ]);
+  try {
+    const [stopCameraRes, stopThermalRes] = await Promise.all([
+      fetch(stopCameraAPI, { method: 'GET' }),
+      fetch(stopThermalAPI, { method: 'GET' })
+    ]);
 
-          if (stopCameraRes.ok && stopThermalRes.ok) {
-            showAlert('success', 'Reset completed successfully.');
-            resetBtn.classList.add('hidden'); // Hide button after successful reset
-          } else {
-            showAlert('error', 'Reset failed. Please check server.');
-          }
-        } catch (error) {
-          console.error('Reset failed:', error);
-          showAlert('error', 'Reset failed due to network error.');
-        } finally {
-          resetBtn.disabled = false;
-          resetBtn.textContent = 'Reset';
-        }
-      });
+        if (stopCameraRes.ok && stopThermalRes.ok) {
+          showAlert('success', 'Reset completed successfully.');
+          resetBtn.classList.add('hidden'); // Hide button after successful reset
           
-      if (!cameraReachable || !thermalReachable) {
-        throw new Error('Servers unreachable: Camera ' + (cameraReachable ? 'OK' : 'DOWN') + 
-                      ', Thermal ' + (thermalReachable ? 'OK' : 'DOWN'));
-          resetBtn.classList.remove('hidden');  // Show Reset button
+          // Reset the stream button to initial state
+          resetStreamButton();
+          
+          // Also reset verification state
+          isCorsVerified = false;
+          refreshBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" fill="currentColor"/></svg>';
+          refreshBtn.disabled = false;
+          streamBtn.style.backgroundColor = '#ff4444';
+        } else {
+          showAlert('error', 'Reset failed. Please check server.');
+        }
+      } catch (error) {
+        console.error('Reset failed:', error);
+        showAlert('error', 'Reset failed due to network error.');
+      } finally {
+        resetBtn.disabled = false;
+        resetBtn.textContent = 'Reset';
       }
-
+    });
+          
+        // Show resetBtn only if either is unreachable
+        if (!cameraReachable || !thermalReachable) {
+          resetBtn.classList.remove('hidden'); // Show Reset button
+        } else {
+          resetBtn.classList.add('hidden'); // Hide Reset button
+        }
+  
           // Then verify endpoints
           const [cameraResponse, thermalResponse] = await Promise.all([
             fetch(cameraVerifiedAPI, { 
@@ -1399,6 +1412,7 @@ const Dashboard = () => {
         streamBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16"><path d="M16 16v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v4m4-4v16" fill="none" stroke="currentColor" stroke-width="2"/></svg> Start Stream';
         streamBtn.style.backgroundColor = '#ff4444';
         isFirstClick = true;
+        isStreaming = false;
       }
 
       function showAlert(type, message) {
@@ -1426,7 +1440,7 @@ const Dashboard = () => {
     //Servo Control Script
     const SERVER = "http://100.68.107.103:8003";  //RPi backend URL
 
-    let servoRunning = false;   // Track state
+    let servoRunning = false;  // Track state
 
     const controlBtn = document.getElementById('servo-toggle-btn');
 
@@ -1511,7 +1525,7 @@ const Dashboard = () => {
       });
     });
 
-  document.addEventListener('keydown', (event) => {
+     document.addEventListener('keydown', (event) => {
   if (!servoRunning) return;
 
   let arrow = null;
@@ -1560,7 +1574,6 @@ const Dashboard = () => {
 
   if (arrow) highlightArrow(arrow);
 });
-
 
     function sendServoCommand(axis, angle) {
       fetch(SERVER + "/servo?axis=" + axis + "&angle=" + angle)
@@ -1689,12 +1702,16 @@ const Dashboard = () => {
       overflow: hidden;
       display: flex;
       flex-direction: column;
+      position: relative;
     }
     
     .pulse-viewer-header {
       padding: 8px 12px;
       background: rgba(0,0,0,0.3);
       font-size: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
     
     .pulse-viewer-content {
@@ -1714,6 +1731,36 @@ const Dashboard = () => {
       width: 100%;
       height: 100%;
       border: none;
+    }
+    
+    .viewer-actions {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .viewer-action-btn {
+      background: transparent;
+      border: none;
+      color: #BBBBBB;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      transition: all 0.2s;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .viewer-action-btn:hover {
+      color: #FFFFFF;
+      background: rgba(255,255,255,0.1);
+    }
+    
+    .fullscreen-icon {
+      width: 16px;
+      height: 16px;
     }
     
     @keyframes spin {
@@ -1751,6 +1798,23 @@ const Dashboard = () => {
       opacity: 0;
       transition: opacity 0.5s;
     }
+    
+    /* Fullscreen styles */
+    .pulse-viewer-container.fullscreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 9999;
+      border-radius: 0;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .pulse-viewer-container.fullscreen .pulse-viewer-content {
+      height: calc(100% - 36px); /* Account for header height */
+    }
   </style>
 </head>
 <body>
@@ -1773,9 +1837,17 @@ const Dashboard = () => {
     </div>
  
     <div class="pulse-content">
-      <div class="pulse-viewer-container">
+      <div class="pulse-viewer-container" id="pulse-viewer-container">
         <div class="pulse-viewer-header">
           <span>PulseView</span>
+          <div class="viewer-actions">
+            <button class="viewer-action-btn" id="fullscreen-btn" title="Toggle fullscreen">
+              <svg class="fullscreen-icon" viewBox="0 0 24 24" id="fullscreen-icon">
+                <path d="M7 7h4V5H5v6h2V7zm10 0h-4V5h6v6h-2V7zm-10 10h4v2H5v-6h2v4zm10 0h-4v2h6v-6h-2v4z" 
+                      stroke="currentColor" fill="none" stroke-width="1.5"/>
+              </svg>
+            </button>
+          </div>
         </div>
         <div class="pulse-viewer-content">
           <div class="pulse-viewer-placeholder" id="pulse-viewer-feed">PulseView not launched</div>
@@ -1794,6 +1866,9 @@ const Dashboard = () => {
       const launchBtn = document.getElementById('launch-btn');
       const pulseViewerFeed = document.getElementById('pulse-viewer-feed');
       const pulseViewerIframe = document.getElementById('pulse-viewer-iframe');
+      const fullscreenBtn = document.getElementById('fullscreen-btn');
+      const fullscreenIcon = document.getElementById('fullscreen-icon');
+      const pulseViewerContainer = document.getElementById('pulse-viewer-container');
       const ipAddress = "${ipAddress}";
  
       function showAlert(type, message) {
@@ -1810,7 +1885,34 @@ const Dashboard = () => {
           setTimeout(() => document.body.removeChild(alertDiv), 500);
         }, 3000);
       }
- 
+      
+      // Fullscreen functionality
+      function toggleFullscreen() {
+        if (!document.fullscreenElement) {
+          pulseViewerContainer.requestFullscreen().catch(err => {
+            console.error('Error attempting to enable fullscreen:', err);
+            showAlert('error', 'Fullscreen failed: ' + err.message);
+          });
+        } else {
+          document.exitFullscreen();
+        }
+      }
+      
+      // Update fullscreen button icon based on state
+      function updateFullscreenButton() {
+        if (document.fullscreenElement) {
+          fullscreenIcon.innerHTML = '<path d="M5 16h4v4h2v-6H5v2zm10-10h-4V2h-2v6h6V6zm-10 8h4v4h2v-6H5v2zm10-8h-4V2h-2v6h6V6z" stroke="currentColor" fill="none" stroke-width="1.5"/>';
+          fullscreenBtn.setAttribute('title', 'Exit fullscreen');
+        } else {
+          fullscreenIcon.innerHTML = '<path d="M7 7h4V5H5v6h2V7zm10 0h-4V5h6v6h-2V7zm-10 10h4v2H5v-6h2v4zm10 0h-4v2h6v-6h-2v4z" stroke="currentColor" fill="none" stroke-width="1.5"/>';
+          fullscreenBtn.setAttribute('title', 'Enter fullscreen');
+        }
+      }
+      
+      // Event listeners for fullscreen changes
+      document.addEventListener('fullscreenchange', updateFullscreenButton);
+      fullscreenBtn.addEventListener('click', toggleFullscreen);
+
       // Launch PulseView control
       launchBtn.addEventListener('click', async () => {
         if (launchBtn.textContent.includes('Launch')) {
@@ -2511,13 +2613,13 @@ const AudioStreamPage = () => {
     try {
       let apiUrl;
       if (selected === "HDMI") {
-        apiUrl = "http://100.68.107.103:7123";
+        apiUrl = "http://100.68.107.103:7123/audio";
       } else if (selected === "Bluetooth") {
         apiUrl = "YOUR_BLUETOOTH_ENDPOINT";
       }
 
       // Test connection
-      const response = await fetch(apiUrl, { method: 'HEAD' });
+      const response = await fetch(apiUrl, { method: 'GET' });
       if (!response.ok) throw new Error("Connection failed");
 
       setStreamUrl(apiUrl);
@@ -2586,7 +2688,8 @@ const AudioStreamPage = () => {
 
     for (let i = 0; i < totalBars; i++) {
       const isPlayed = (i / totalBars) < (currentTime / duration);
-      const barHeight = Math.random() * (height * 0.8);
+      const barHeight = (Math.sin(i + Date.now() / 200) + 1) / 2 * (height * 0.8);
+
       const x = i * (barWidth + gap);
       const y = (height - barHeight) / 2;
       ctx.fillStyle = isPlayed ? '#3498db' : '#ecf0f1';
@@ -2615,18 +2718,40 @@ const AudioStreamPage = () => {
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-    
-    const updateTime = () => setCurrentTime(audio.currentTime);
+
+    const updateTime = () => setCurrentTime(audio.currentTime || 0);
     const updateDuration = () => setDuration(audio.duration || 1);
-    
+
     audio.addEventListener('timeupdate', updateTime);
     audio.addEventListener('loadedmetadata', updateDuration);
-    
+
     return () => {
       audio.removeEventListener('timeupdate', updateTime);
       audio.removeEventListener('loadedmetadata', updateDuration);
     };
   }, []);
+
+    useEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      // Ensure canvas width is set based on rendered DOM
+      canvas.width = canvas.offsetWidth || 600;
+    }
+    }, []);
+
+    useEffect(() => {
+    if (!isPlaying) return;
+
+    const interval = setInterval(() => {
+      setCurrentTime(prev => {
+        const next = prev + 0.5;
+        return next < duration ? next : duration;
+      });
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, [isPlaying, duration]);
+
 
   return (
     <div className="stream-container1">
@@ -2720,459 +2845,142 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>`;
-    } else if (isFirmware) {
+    } else if (isSystemInfo || isUsbSharing || isFirmware) {
+      let deviceIp = device.ipAddress.split("/")[0];
+      let iframeURL = "";
+
+      if (isSystemInfo) {
+        iframeURL = `http://${deviceIp}:8001/`;
+      } else if (isUsbSharing) {
+        iframeURL = `http://100.112.10.66:8081/`;
+      } else if (isFirmware) {
+        iframeURL = `http://${deviceIp}:5002/`;
+      }
       popupHTML = `<!DOCTYPE html>
 <html>
 <head>
-  <title>Firmware Flashing</title>
+  <title>${title}</title>
+  ${postMessageScript}
+  ${timerScript}
   <style>
-    body {
+      body {
       font-family: 'Segoe UI', Arial, sans-serif;
-      background: #151618;
-      color: #FFFFFF;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .container {
-      background: #1E1E1E;
-      border-radius: 12px;
-      padding: 40px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-      min-width: 500px;
-      max-width: 600px;
-      text-align: center;
-    }
-
-    .header {
-      margin-bottom: 40px;
-    }
-
-    .header h1 {
-      font-size: 28px;
-      font-weight: 600;
+      background: #121212;
       color: #FFFFFF;
       margin: 0;
-      margin-bottom: 10px;
-    }
-
-    .header p {
-      color: #BBBBBB;
-      font-size: 16px;
-      margin: 0;
-    }
-
-    .buttons-section {
-      display: flex;
-      gap: 16px;
-      justify-content: center;
-      margin-bottom: 30px;
-      flex-wrap: wrap;
-    }
-
-    .action-btn {
-      background: #2A2A2A;
-      border: none;
-      color: #FFFFFF;
-      padding: 12px 24px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 16px;
-      font-weight: 500;
-      transition: background 0.3s ease, transform 0.2s ease;
-      min-width: 140px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-
-    .action-btn:hover {
-      transform: translateY(-2px);
-    }
-
-    .action-btn:active {
-      transform: scale(0.96) translateY(1px);
-    }
-
-    .detect-btn {
-      background: #ff6a00;
-    }
-
-    .detect-btn:hover {
-      background: #e55d00;
-    }
-
-    .read-btn {
-      background: #0971b3;
-    }
-
-    .read-btn:hover {
-      background: #0862a0;
-    }
-
-    .write-btn {
-      background: #0971b3;
-    }
-
-    .write-btn:hover {
-      background: #0862a0;
-    }
-
-    .upload-section {
-      margin-top: 20px;
-    }
-
-    .upload-label {
-      display: block;
-      font-size: 16px;
-      font-weight: 500;
-      margin-bottom: 12px;
-      color: #FFFFFF;
-    }
-
-    .file-input-wrapper {
-      position: relative;
-      display: inline-block;
-      cursor: pointer;
-      width: 100%;
-      max-width: 400px;
-    }
-
-    .file-input {
-      opacity: 0;
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      cursor: pointer;
-    }
-
-    .file-input-display {
-      background: #2A2A2A;
-      border: 2px dashed #555;
-      border-radius: 8px;
-      padding: 20px;
-      text-align: center;
-      transition: border-color 0.3s ease, background 0.3s ease;
-      min-height: 60px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .file-input-display:hover {
-      border-color: #ff6a00;
-      background: #333;
-    }
-
-    .file-input-display.dragover {
-      border-color: #ff6a00;
-      background: #333;
-    }
-
-    .upload-icon {
-      font-size: 24px;
-      color: #BBBBBB;
-    }
-
-    .upload-text {
-      color: #BBBBBB;
-      font-size: 14px;
-    }
-
-    .selected-file {
-      color: #ff6a00;
-      font-weight: 500;
-    }
-
-    .status-section {
-      margin-top: 30px;
-      padding: 16px;
-      background: #252525;
-      border-radius: 8px;
-      min-height: 50px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .status-text {
-      color: #BBBBBB;
-      font-size: 14px;
-    }
-
-    .status-success {
-      color: #4CAF50;
-    }
-
-    .status-error {
-      color: #f44336;
-    }
-
-    .status-info {
-      color: #2196F3;
-    }
-
-    .progress-bar {
-      width: 100%;
-      height: 4px;
-      background: #333;
-      border-radius: 2px;
-      margin-top: 10px;
+      padding: 0;
       overflow: hidden;
     }
 
-    .progress-fill {
-      height: 100%;
-      background: #ff6a00;
-      width: 0%;
-      transition: width 0.3s ease;
+    .three-drivers-container {
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      box-sizing: border-box;
+      max-width: 2000px;
+      margin: 80px auto 0 auto; /* adds top margin to push content below fixed header */
+      align-items: center;
     }
 
-    .hidden {
-      display: none;
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: #1E1E1E;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      position: fixed;
+      top: 15px;
+      left: 15px;
+      right: 15px;
     }
 
-    @media (max-width: 600px) {
-      .container {
-        min-width: auto;
-        max-width: 90%;
-        padding: 30px 20px;
-      }
-
-      .buttons-section {
-        flex-direction: column;
-        align-items: center;
-      }
-
-      .action-btn {
-        width: 100%;
-        max-width: 250px;
-      }
+    .device-info {
+      display: flex;
+      flex-direction: column;
     }
+
+     .device-name-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #device-timer {
+      margin-left: 10px;
+    }
+
+    .device-name {
+      font-size: 18px;
+      font-weight: 600;
+      color: #FF6A00;
+      white-space: normal;
+      overflow: visible;
+      text-overflow: unset;
+      word-break: break-word;
+      line-height: 1.2;
+      text-align: center;
+    }
+
+    .message {
+      font-size: 1.5rem;
+      color: #f44336;
+    }
+    iframe {
+      width: 100%;
+      height: calc(105vh - 150px);
+      border: none;
+      max-width: 2000px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <h1>Firmware Flashing</h1>
-      <p>Detect, read, and write firmware to your device</p>
-    </div>
-
-    <div class="buttons-section">
-      <button class="action-btn detect-btn" id="detect-btn">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/>
-          <path d="m21 21-4.35-4.35"/>
-        </svg>
-        Detect Chip
-      </button>
-      
-      <button class="action-btn read-btn" id="read-btn">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14,2 14,8 20,8"/>
-          <line x1="16" y1="13" x2="8" y2="13"/>
-          <line x1="16" y1="17" x2="8" y2="17"/>
-          <polyline points="10,9 9,9 8,9"/>
-        </svg>
-        Read Flashrom
-      </button>
-      
-      <button class="action-btn write-btn" id="write-btn">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14,2 14,8 20,8"/>
-          <line x1="12" y1="18" x2="12" y2="12"/>
-          <polyline points="9,15 12,12 15,15"/>
-        </svg>
-        Upload Flashrom
-      </button>
-    </div>
-
-    <div class="upload-section">
-      <label class="upload-label">Select Firmware File</label>
-      <div class="file-input-wrapper">
-        <input type="file" class="file-input" id="firmware-file" accept=".bin,.rom,.hex,.img">
-        <div class="file-input-display" id="file-display">
-          <div class="upload-icon">📁</div>
-          <div class="upload-text">Click to browse or drag & drop firmware file</div>
+<div class="three-drivers-container">
+      <div class="header">
+        <div class="device-info">
+          <div class="device-name-row">
+            <div class="device-name">${device.name}</div>
+            <div id="device-timer">--:--:--</div>
+          </div>
         </div>
       </div>
-    </div>
+    <div id="message" class="message"></div>
+    <iframe id="content-frame" src=""></iframe>
+</div>
 
-    <div class="status-section">
-      <div class="status-text" id="status-text">Ready to start firmware operations</div>
-      <div class="progress-bar hidden" id="progress-bar">
-        <div class="progress-fill" id="progress-fill"></div>
-      </div>
-    </div>
-  </div>
+<script>
+  const iframe = document.getElementById('content-frame');
+  const messageDiv = document.getElementById('message');
+  const url = '${iframeURL}';
 
-  <script>
-    // DOM elements
-    const detectBtn = document.getElementById('detect-btn');
-    const readBtn = document.getElementById('read-btn');
-    const writeBtn = document.getElementById('write-btn');
-    const fileInput = document.getElementById('firmware-file');
-    const fileDisplay = document.getElementById('file-display');
-    const statusText = document.getElementById('status-text');
-    const progressBar = document.getElementById('progress-bar');
-    const progressFill = document.getElementById('progress-fill');
+  if (!url) {
+    messageDiv.textContent = 'Unable to get response from the API';
+  } else {
+    iframe.src = url;
 
-    let selectedFile = null;
+    let timeout = setTimeout(() => {
+      messageDiv.textContent = 'No response';
+      iframe.style.display = 'none';
+    }, 5000); // wait 5 seconds for content to load
 
-    // File input handling
-    fileInput.addEventListener('change', handleFileSelect);
-    fileDisplay.addEventListener('click', () => fileInput.click());
-    fileDisplay.addEventListener('dragover', handleDragOver);
-    fileDisplay.addEventListener('dragleave', handleDragLeave);
-    fileDisplay.addEventListener('drop', handleFileDrop);
+    iframe.onload = () => {
+      clearTimeout(timeout);
+      iframe.style.display = 'block';
+      messageDiv.style.display = 'none';
+    };
 
-    function handleFileSelect(event) {
-      const file = event.target.files[0];
-      updateFileDisplay(file);
-    }
+    iframe.onerror = () => {
+      clearTimeout(timeout);
+      messageDiv.textContent = 'No response';
+    };
+  }
+</script>
 
-    function handleDragOver(event) {
-      event.preventDefault();
-      fileDisplay.classList.add('dragover');
-    }
-
-    function handleDragLeave(event) {
-      event.preventDefault();
-      fileDisplay.classList.remove('dragover');
-    }
-
-    function handleFileDrop(event) {
-      event.preventDefault();
-      fileDisplay.classList.remove('dragover');
-      const file = event.dataTransfer.files[0];
-      fileInput.files = event.dataTransfer.files;
-      updateFileDisplay(file);
-    }
-
-    function updateFileDisplay(file) {
-      if (file) {
-        selectedFile = file;
-        const fileSize = (file.size / 1024 / 1024).toFixed(2);
-        fileDisplay.innerHTML = '
-          <div class="upload-icon">✓</div>
-          <div class="selected-file">File Name</div>
-          <div class="upload-text">10 MB</div>
-        ';
-      } else {
-        selectedFile = null;
-        fileDisplay.innerHTML = '
-          <div class="upload-icon">📁</div>
-          <div class="upload-text">Click to browse or drag & drop firmware file</div>
-        ';
-      }
-    }
-
-    // Button event handlers
-    detectBtn.addEventListener('click', detectChip);
-    readBtn.addEventListener('click', readFlashrom);
-    writeBtn.addEventListener('click', uploadFlashrom);
-
-    function detectChip() {
-      updateStatus('Detecting chip...', 'info');
-      showProgress();
-      disableButtons();
-
-      // Simulate detection process
-      simulateProgress(3000, () => {
-        updateStatus('Chip detected: W25Q64FV (8MB)', 'success');
-        hideProgress();
-        enableButtons();
-      });
-    }
-
-    function readFlashrom() {
-      updateStatus('Reading flashrom...', 'info');
-      showProgress();
-      disableButtons();
-
-      // Simulate read process
-      simulateProgress(5000, () => {
-        updateStatus('Flashrom read successfully. Downloaded as backup.bin', 'success');
-        hideProgress();
-        enableButtons();
-      });
-    }
-
-    function uploadFlashrom() {
-      if (!selectedFile) {
-        updateStatus('Please select a firmware file first', 'error');
-        return;
-      }
-
-      updateStatus('Uploading...', 'info');
-      showProgress();
-      disableButtons();
-
-      // Simulate upload process
-      simulateProgress(7000, () => {
-        updateStatus('Firmware uploaded successfully!', 'success');
-        hideProgress();
-        enableButtons();
-      });
-    }
-
-    function updateStatus(message, type = '') {
-      statusText.textContent = message;
-      statusText.className = 'status-text';
-      if (type) {
-        statusText.classList.add('status-');
-      }
-    }
-
-    function showProgress() {
-      progressBar.classList.remove('hidden');
-      progressFill.style.width = '0%';
-    }
-
-    function hideProgress() {
-      progressBar.classList.add('hidden');
-      progressFill.style.width = '0%';
-    }
-
-    function simulateProgress(duration, callback) {
-      let progress = 0;
-      const interval = setInterval(() => {
-        progress += Math.random() * 15;
-        if (progress >= 100) {
-          progress = 100;
-          clearInterval(interval);
-          setTimeout(callback, 500);
-        }
-        progressFill.style.width = progress + '%';
-      }, duration / 20);
-    }
-
-    function disableButtons() {
-      detectBtn.disabled = true;
-      readBtn.disabled = true;
-      writeBtn.disabled = true;
-      detectBtn.style.opacity = '0.6';
-      readBtn.style.opacity = '0.6';
-      writeBtn.style.opacity = '0.6';
-    }
-
-    function enableButtons() {
-      detectBtn.disabled = false;
-      readBtn.disabled = false;
-      writeBtn.disabled = false;
-      detectBtn.style.opacity = '1';
-      readBtn.style.opacity = '1';
-      writeBtn.style.opacity = '1';
-    }
-  </script>
 </body>
 </html>`;
     } else if (isPostcode) {
@@ -3322,6 +3130,95 @@ body {
       animation: spin 1s ease-in-out infinite;
       margin-right: 10px;
     }
+    
+    .controls {
+      display: flex;
+      gap: 12px;
+    }
+
+  .refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #2A2A2A;
+  border: none;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.refresh-btn:hover {
+  background: #FF6A00;
+}
+
+.refresh-btn.loading {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.refresh-spinner, .loading-spinner {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+}
+
+.loading-spinner {
+  margin: 20px auto;
+  display: block;
+  width: 40px;
+  height: 40px;
+  border-width: 4px;
+}
+
+.feed-Placeholder {
+  color: #aaa;
+  text-align: center;
+  font-size: 14px;
+}
+
+.alert {
+  position: fixed;
+  top: 80px;
+  right: 30px;
+  padding: 12px 16px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  z-index: 1000;
+  max-width: 300px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+
+.alert-success {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.alert-error {
+  background-color: #F44336;
+  color: white;
+}
+
+.alert-info {
+  background-color: #2196F3;
+  color: white;
+}
+
+.alert-warning {
+  background-color: #FF9800;
+  color: white;
+}
+
+.alert-icon {
+  margin-right: 8px;
+  font-weight: bold;
+}
 
     @keyframes spin {
       to { transform: rotate(360deg); }
@@ -3367,7 +3264,12 @@ body {
           </div>
         </div>
         <div class="controls">
-          <button class="launch-btn" id="launch-btn">Launch</button>
+        <button class="refresh-btn" id="refresh-btn">
+          <svg viewBox="0 0 24 24" width="16" height="16">
+            <path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" fill="currentColor"/>
+          </svg>
+        </button>
+        <button class="launch-btn" id="launch-btn">Launch</button>
         </div>
       </div>
 
@@ -3381,179 +3283,79 @@ body {
  </div> 
 
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const launchBtn = document.getElementById('launch-btn');
-      const postcodeValue = document.getElementById('postcode-value');
-      const statusMessage = document.getElementById('status-message');
+  document.addEventListener('DOMContentLoaded', () => {
+    const launchBtn = document.getElementById('launch-btn');
+    const refreshBtn = document.getElementById('refresh-btn');
+    const postcodeValue = document.getElementById('postcode-value');
+    const statusMessage = document.getElementById('status-message');
 
-      launchBtn.addEventListener('click', async () => {
-        // Disable button and show loading state
-        launchBtn.disabled = true;
-        launchBtn.innerHTML = '<span class="loading"></span>Reading...';
-        
-        // Update status
-        statusMessage.textContent = 'Reading post code...';
-        postcodeValue.textContent = '---';
+    // LAUNCH BUTTON FUNCTIONALITY
+    launchBtn.addEventListener('click', async () => {
+      launchBtn.disabled = true;
+      launchBtn.innerHTML = '<span class="loading"></span>Reading...';
+      statusMessage.textContent = 'Reading post code...';
+      postcodeValue.textContent = '---';
 
-        try {
-          // Simulate post code reading process
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          
-          // Generate random post code for demo
-          const postcodes = ['SW1A 1AA', 'M1 1AA', 'B33 8TH', 'W1A 0AX', 'E1 6AN'];
-          const randomPostcode = postcodes[Math.floor(Math.random() * postcodes.length)];
-          
-          // Display result
-          postcodeValue.textContent = randomPostcode;
-          statusMessage.textContent = 'Post code read successfully';
-          
-        } catch (error) {
-          console.error('Error reading post code:', error);
-          postcodeValue.textContent = 'ERROR';
-          statusMessage.textContent = 'Failed to read post code';
-        } finally {
-          // Re-enable button
-          launchBtn.disabled = false;
-          launchBtn.textContent = 'Launch';
+      try {
+        const response = await fetch('http://100.109.50.57:5010/get_data', {
+          method: 'GET',
+        });
+
+        if (!response.ok) {
+          throw new Error("HTTP error! Status: " + response.status);
         }
-      });
-    });
-  </script>
-</body>
-</html>`;
-    } else if (isSystemInfo || isUsbSharing) {
-      let deviceIp = device.ipAddress.split("/")[0];
-      let iframeURL = "";
 
-      if (isSystemInfo) {
-        iframeURL = `http://${deviceIp}:8000/`;
-      } else if (isUsbSharing) {
-        iframeURL = `http://${deviceIp}:8080/`;
+        const data = await response.text(); // Assuming it returns raw text like 'SW1A 1AA'
+        postcodeValue.textContent = data || 'N/A';
+        statusMessage.textContent = 'Post code read successfully';
+      } catch (error) {
+        console.error('Error reading post code:', error);
+        postcodeValue.textContent = 'ERROR';
+        statusMessage.textContent = 'Failed to read post code';
+      } finally {
+        launchBtn.disabled = false;
+        launchBtn.textContent = 'Launch';
       }
+    });
 
-      popupHTML = `<!DOCTYPE html>
-<html>
-<head>
-  <title>${title}</title>
-  ${postMessageScript}
-  ${timerScript}
-  <style>
-      body {
-      font-family: 'Segoe UI', Arial, sans-serif;
-      background: #121212;
-      color: #FFFFFF;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
+    // REFRESH BUTTON FUNCTIONALITY
+    refreshBtn.addEventListener('click', async () => {
+      refreshBtn.disabled = true;
+      refreshBtn.classList.add('loading');
+
+      try {
+        const response = await fetch('http://100.109.50.57:8001/power/reset', {
+          method: 'GET',
+        });
+
+        if (!response.ok) {
+          throw new Error("HTTP error! Status: " + response.status);
+        }
+
+        // Optionally show confirmation message
+        showAlert('Device power reset successfully.', 'success');
+      } catch (error) {
+        console.error('Error refreshing device:', error);
+        showAlert('Failed to reset power.', 'error');
+      } finally {
+        refreshBtn.disabled = false;
+        refreshBtn.classList.remove('loading');
+      }
+    });
+
+    // Alert helper function
+    function showAlert(message, type = 'info') {
+      const alertBox = document.createElement('div');
+      alertBox.className = "alert alert-" + type;
+      alertBox.innerHTML = '<span class="alert-icon">!</span>' + message;
+
+      document.body.appendChild(alertBox);
+
+      setTimeout(function() {
+        alertBox.remove();
+      }, 4000);
     }
-
-    .stream_state_control-container {
-      display: flex;
-      flex-direction: column;
-      padding: 16px;
-      box-sizing: border-box;
-      max-width: 2000px;
-      margin: 80px auto 0 auto; /* adds top margin to push content below fixed header */
-      align-items: center;
-    }
-
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 16px;
-      background: #1E1E1E;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-      position: fixed;
-      top: 15px;
-      left: 15px;
-      right: 15px;
-    }
-
-    .device-info {
-      display: flex;
-      flex-direction: column;
-    }
-
-     .device-name-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    #device-timer {
-      margin-left: 10px;
-    }
-
-    .device-name {
-      font-size: 18px;
-      font-weight: 600;
-      color: #FF6A00;
-      white-space: normal;
-      overflow: visible;
-      text-overflow: unset;
-      word-break: break-word;
-      line-height: 1.2;
-      text-align: center;
-    }
-
-    .message {
-      font-size: 1.5rem;
-      color: #f44336;
-    }
-    iframe {
-      width: 100%;
-      height: calc(100vh - 150px);
-      border: none;
-      max-width: 2000px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-  </style>
-</head>
-<body>
-<div class="stream_state_control-container">
-      <div class="header">
-        <div class="device-info">
-          <div class="device-name-row">
-            <div class="device-name">${device.name}</div>
-            <div id="device-timer">--:--:--</div>
-          </div>
-        </div>
-      </div>
-    <div id="message" class="message"></div>
-    <iframe id="content-frame" src=""></iframe>
-</div>
-
-<script>
-  const iframe = document.getElementById('content-frame');
-  const messageDiv = document.getElementById('message');
-  const url = '${iframeURL}';
-
-  if (!url) {
-    messageDiv.textContent = 'Unable to get response from the API';
-  } else {
-    iframe.src = url;
-
-    let timeout = setTimeout(() => {
-      messageDiv.textContent = 'No response';
-      iframe.style.display = 'none';
-    }, 5000); // wait 5 seconds for content to load
-
-    iframe.onload = () => {
-      clearTimeout(timeout);
-      iframe.style.display = 'block';
-      messageDiv.style.display = 'none';
-    };
-
-    iframe.onerror = () => {
-      clearTimeout(timeout);
-      messageDiv.textContent = 'No response';
-    };
-  }
+  });
 </script>
 
 </body>
