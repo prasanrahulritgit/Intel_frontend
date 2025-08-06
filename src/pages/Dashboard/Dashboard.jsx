@@ -99,8 +99,8 @@ const Dashboard = () => {
     ct1_ip: { name: "CT", iconType: "ThermoCamIcon" },
     pc_ip: { name: "Virtual Desk", iconType: "MonitorSmartphone" },
     pulse1_ip: { name: "Pulse", iconType: "ChartColumnStacked" },
-    usb_ip: { name: "USB Over Network", iconType: "UsbIcon" },
-    system_ip: { name: "System State Control", iconType: "CpuIcon" },
+    usb_ip: { name: "USB File Sharing", iconType: "UsbIcon" },
+    system_ip: { name: "System State Control & ATX", iconType: "CpuIcon" },
     bias_ip: { name: "Firm Flashing", iconType: "ZapIcon" },
     os_ip: { name: "OS Flashing", iconType: "HardDriveIcon" },
     cmd_ip: { name: "Command Prompt", iconType: "TerminalIcon" },
@@ -180,13 +180,17 @@ const Dashboard = () => {
               const subDrivers = [
                 { name: "Stream 1", endpoint: "stream1", icon: "VideoIcon" },
                 { name: "Stream 2", endpoint: "stream2", icon: "VideoIcon" },
-                { name: "USB Over Network", endpoint: "usb", icon: "UsbIcon" },
+                { name: "USB File Sharing", endpoint: "usb", icon: "UsbIcon" },
                 {
-                  name: "System State Control",
+                  name: "System State Control & ATX",
                   endpoint: "systemstate_atx",
                   icon: "CpuIcon",
                 },
-                { name: "Firmware Flashing", endpoint: "bias", icon: "ZapIcon" },
+                {
+                  name: "Firmware Flashing",
+                  endpoint: "bias",
+                  icon: "ZapIcon",
+                },
                 { name: "OS Flashing", endpoint: "os", icon: "HardDriveIcon" },
                 //{ name: "Command Prompt", endpoint: "cmd", icon: "TerminalIcon" },
                 {
@@ -3682,13 +3686,13 @@ const AudioStreamPage = () => {
     try {
       let apiUrl;
       if (selected === "HDMI") {
-        apiUrl = "http://100.68.107.103:7123";
+        apiUrl = "http://100.68.107.103:7123/audio";
       } else if (selected === "Bluetooth") {
         apiUrl = "YOUR_BLUETOOTH_ENDPOINT";
       }
 
       // Test connection
-      const response = await fetch(apiUrl, { method: 'HEAD' });
+      const response = await fetch(apiUrl, { method: 'GET' });
       if (!response.ok) throw new Error("Connection failed");
 
       setStreamUrl(apiUrl);
@@ -3757,7 +3761,8 @@ const AudioStreamPage = () => {
 
     for (let i = 0; i < totalBars; i++) {
       const isPlayed = (i / totalBars) < (currentTime / duration);
-      const barHeight = Math.random() * (height * 0.8);
+      const barHeight = (Math.sin(i + Date.now() / 200) + 1) / 2 * (height * 0.8);
+
       const x = i * (barWidth + gap);
       const y = (height - barHeight) / 2;
       ctx.fillStyle = isPlayed ? '#3498db' : '#ecf0f1';
@@ -3786,18 +3791,40 @@ const AudioStreamPage = () => {
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-    
-    const updateTime = () => setCurrentTime(audio.currentTime);
+
+    const updateTime = () => setCurrentTime(audio.currentTime || 0);
     const updateDuration = () => setDuration(audio.duration || 1);
-    
+
     audio.addEventListener('timeupdate', updateTime);
     audio.addEventListener('loadedmetadata', updateDuration);
-    
+
     return () => {
       audio.removeEventListener('timeupdate', updateTime);
       audio.removeEventListener('loadedmetadata', updateDuration);
     };
   }, []);
+
+    useEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      // Ensure canvas width is set based on rendered DOM
+      canvas.width = canvas.offsetWidth || 600;
+    }
+    }, []);
+
+    useEffect(() => {
+    if (!isPlaying) return;
+
+    const interval = setInterval(() => {
+      setCurrentTime(prev => {
+        const next = prev + 0.5;
+        return next < duration ? next : duration;
+      });
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, [isPlaying, duration]);
+
 
   return (
     <div className="stream-container1">
@@ -3891,18 +3918,18 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>`;
-    } else if (isSystemInfo || isUsbSharing || isFirmware) {
-        let deviceIp = device.ipAddress.split("/")[0];
+      } else if (isSystemInfo || isUsbSharing || isFirmware) {
+          let deviceIp = device.ipAddress.split("/")[0];
         let iframeURL = "";
 
-        if (isSystemInfo) {
-          iframeURL = `http://${deviceIp}:8000/`;
-        } else if (isUsbSharing) {
-          iframeURL = `http://${deviceIp}:8080/`;
-        } else if (isFirmware) {
-          iframeURL = `http://${deviceIp}:5001/`;
-        }
-popupHTML = `<!DOCTYPE html>
+      if (isSystemInfo) {
+        iframeURL = `http://${deviceIp}:8001/`;
+      } else if (isUsbSharing) {
+        iframeURL = `http://100.112.10.66:8081/`;
+      } else if (isFirmware) {
+        iframeURL = `http://${deviceIp}:5002/`;
+      }
+      popupHTML = `<!DOCTYPE html>
 <html>
 <head>
   <title>${title}</title>
@@ -3975,7 +4002,7 @@ popupHTML = `<!DOCTYPE html>
     }
     iframe {
       width: 100%;
-      height: calc(100vh - 150px);
+      height: calc(105vh - 150px);
       border: none;
       max-width: 2000px;
       display: flex;
@@ -4176,6 +4203,95 @@ body {
       animation: spin 1s ease-in-out infinite;
       margin-right: 10px;
     }
+    
+    .controls {
+      display: flex;
+      gap: 12px;
+    }
+
+  .refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #2A2A2A;
+  border: none;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.refresh-btn:hover {
+  background: #FF6A00;
+}
+
+.refresh-btn.loading {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.refresh-spinner, .loading-spinner {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+}
+
+.loading-spinner {
+  margin: 20px auto;
+  display: block;
+  width: 40px;
+  height: 40px;
+  border-width: 4px;
+}
+
+.feed-Placeholder {
+  color: #aaa;
+  text-align: center;
+  font-size: 14px;
+}
+
+.alert {
+  position: fixed;
+  top: 80px;
+  right: 30px;
+  padding: 12px 16px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  z-index: 1000;
+  max-width: 300px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+
+.alert-success {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.alert-error {
+  background-color: #F44336;
+  color: white;
+}
+
+.alert-info {
+  background-color: #2196F3;
+  color: white;
+}
+
+.alert-warning {
+  background-color: #FF9800;
+  color: white;
+}
+
+.alert-icon {
+  margin-right: 8px;
+  font-weight: bold;
+}
 
     @keyframes spin {
       to { transform: rotate(360deg); }
@@ -4221,7 +4337,12 @@ body {
           </div>
         </div>
         <div class="controls">
-          <button class="launch-btn" id="launch-btn">Launch</button>
+        <button class="refresh-btn" id="refresh-btn">
+          <svg viewBox="0 0 24 24" width="16" height="16">
+            <path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" fill="currentColor"/>
+          </svg>
+        </button>
+        <button class="launch-btn" id="launch-btn">Launch</button>
         </div>
       </div>
 
@@ -4235,44 +4356,81 @@ body {
  </div> 
 
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const launchBtn = document.getElementById('launch-btn');
-      const postcodeValue = document.getElementById('postcode-value');
-      const statusMessage = document.getElementById('status-message');
+  document.addEventListener('DOMContentLoaded', () => {
+    const launchBtn = document.getElementById('launch-btn');
+    const refreshBtn = document.getElementById('refresh-btn');
+    const postcodeValue = document.getElementById('postcode-value');
+    const statusMessage = document.getElementById('status-message');
 
-      launchBtn.addEventListener('click', async () => {
-        // Disable button and show loading state
-        launchBtn.disabled = true;
-        launchBtn.innerHTML = '<span class="loading"></span>Reading...';
-        
-        // Update status
-        statusMessage.textContent = 'Reading post code...';
-        postcodeValue.textContent = '---';
+    // LAUNCH BUTTON FUNCTIONALITY
+    launchBtn.addEventListener('click', async () => {
+      launchBtn.disabled = true;
+      launchBtn.innerHTML = '<span class="loading"></span>Reading...';
+      statusMessage.textContent = 'Reading post code...';
+      postcodeValue.textContent = '---';
 
-        try {
-          // Simulate post code reading process
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          
-          // Generate random post code for demo
-          const postcodes = ['SW1A 1AA', 'M1 1AA', 'B33 8TH', 'W1A 0AX', 'E1 6AN'];
-          const randomPostcode = postcodes[Math.floor(Math.random() * postcodes.length)];
-          
-          // Display result
-          postcodeValue.textContent = randomPostcode;
-          statusMessage.textContent = 'Post code read successfully';
-          
-        } catch (error) {
-          console.error('Error reading post code:', error);
-          postcodeValue.textContent = 'ERROR';
-          statusMessage.textContent = 'Failed to read post code';
-        } finally {
-          // Re-enable button
-          launchBtn.disabled = false;
-          launchBtn.textContent = 'Launch';
+      try {
+        const response = await fetch('http://100.109.50.57:5010/get_data', {
+          method: 'GET',
+        });
+
+        if (!response.ok) {
+          throw new Error("HTTP error! Status: " + response.status);
         }
-      });
+
+        const data = await response.text(); // Assuming it returns raw text like 'SW1A 1AA'
+        postcodeValue.textContent = data || 'N/A';
+        statusMessage.textContent = 'Post code read successfully';
+      } catch (error) {
+        console.error('Error reading post code:', error);
+        postcodeValue.textContent = 'ERROR';
+        statusMessage.textContent = 'Failed to read post code';
+      } finally {
+        launchBtn.disabled = false;
+        launchBtn.textContent = 'Launch';
+      }
     });
-  </script>
+
+    // REFRESH BUTTON FUNCTIONALITY
+    refreshBtn.addEventListener('click', async () => {
+      refreshBtn.disabled = true;
+      refreshBtn.classList.add('loading');
+
+      try {
+        const response = await fetch('http://100.109.50.57:8001/power/reset', {
+          method: 'GET',
+        });
+
+        if (!response.ok) {
+          throw new Error("HTTP error! Status: " + response.status);
+        }
+
+        // Optionally show confirmation message
+        showAlert('Device power reset successfully.', 'success');
+      } catch (error) {
+        console.error('Error refreshing device:', error);
+        showAlert('Failed to reset power.', 'error');
+      } finally {
+        refreshBtn.disabled = false;
+        refreshBtn.classList.remove('loading');
+      }
+    });
+
+    // Alert helper function
+    function showAlert(message, type = 'info') {
+      const alertBox = document.createElement('div');
+      alertBox.className = "alert alert-" + type;
+      alertBox.innerHTML = '<span class="alert-icon">!</span>' + message;
+
+      document.body.appendChild(alertBox);
+
+      setTimeout(function() {
+        alertBox.remove();
+      }, 4000);
+    }
+  });
+</script>
+
 </body>
 </html>`;
     } else {
