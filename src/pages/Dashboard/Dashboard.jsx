@@ -2190,6 +2190,9 @@ resetBtn.addEventListener('click', async () => {
       display: none;
     }
 
+    #unLockBtn {
+      background: #0971b3;
+    }
 
     /* Spinning animation for loading */
     @keyframes spin {
@@ -2243,6 +2246,7 @@ resetBtn.addEventListener('click', async () => {
           </svg>
           Connect
         </button>
+        <button class="control-btn" onclick="unlock()" id="unLockBtn">Crtl + Alt + Del</button>
       </div>
     </div>
 
@@ -2305,7 +2309,7 @@ resetBtn.addEventListener('click', async () => {
               connectBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Disconnect';
               connectBtn.classList.add('active');
               isConnected = true;
-             
+
               // Show fullscreen button
               fullscreenBtn.classList.add('show');
              
@@ -2326,7 +2330,6 @@ resetBtn.addEventListener('click', async () => {
 
       // Fullscreen control
       fullscreenBtn.addEventListener('click', toggleFullscreen);
-
 
       // ESC key to exit fullscreen
       document.addEventListener('keydown', (e) => {
@@ -2364,7 +2367,6 @@ resetBtn.addEventListener('click', async () => {
           exitFullscreen();
         }
       }
-
 
       function toggleFullscreen() {
         if (remoteDesktopContainer.classList.contains('fullscreen')) {
@@ -2489,9 +2491,9 @@ resetBtn.addEventListener('click', async () => {
           }
         });
       }
+    });
 
-
-      async function testConnection(url) {
+    async function testConnection(url) {
         try {
           const response = await fetch(url, {
             method: 'POST',
@@ -2509,7 +2511,6 @@ resetBtn.addEventListener('click', async () => {
           };
         }
       }
-
 
       async function testConnection1(url) {
         try {
@@ -2529,7 +2530,15 @@ resetBtn.addEventListener('click', async () => {
           };
         }
       }
-    });
+
+      function unlock(){
+        console.log('inside unlock function')
+        try{
+          testConnection('http://${ip_add}:5000/ctrl_alt_del')
+        }catch(error){
+          console.log(error.message)
+        };
+      }
   </script>
 </body>
 </html>`;
@@ -2540,6 +2549,7 @@ resetBtn.addEventListener('click', async () => {
 
       const port = `${ip_add}:${streamPort}`;
       const portAlt = `${ip_add}:${streamHost}`;
+      const testConnection = isStream1 ? `http://${port}/start_stream1` : `http://${port}/start_stream2`
       popupHTML = `<!DOCTYPE html>
 <html>
 <head>
@@ -2860,21 +2870,10 @@ resetBtn.addEventListener('click', async () => {
 
 
           try {
-            // const data = await testConnection1('http://${port}/start_stream1')
-            // if (data.status === 200) {
-            //   remoteDesktopFeed.innerHTML = "<img id='remoteDesktopImg' src='http://${portAlt}/stream?advance_headers=1&dual_final_frames=1' style='width: 100%; height: 100%; object-fit: contain;' />";
-             
-            //   // Update button to disconnect
-            //   connectBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Disconnect';
-            //   connectBtn.classList.add('active');
-            //   isConnected = true;
-             
-            //   // Show fullscreen button
-            //   fullscreenBtn.classList.add('show');
-            // } else {
-            //   throw new Error('Stream failed to start');
-            // }
-            remoteDesktopFeed.innerHTML = "<img id='remoteDesktopImg' src='http://${portAlt}:9002/stream?advance_headers=1&dual_final_frames=1' style='width: 100%; height: 100%; object-fit: contain;' />";
+            const data = await testConnection1('${testConnection}')
+            console.log('data', data)
+            if (data.status !== 'failed') {
+              remoteDesktopFeed.innerHTML = "<img id='remoteDesktopImg' src='http://${portAlt}/stream?advance_headers=1&dual_final_frames=1' style='width: 100%; height: 100%; object-fit: contain;' />";
              
               // Update button to disconnect
               connectBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Disconnect';
@@ -2883,6 +2882,9 @@ resetBtn.addEventListener('click', async () => {
              
               // Show fullscreen button
               fullscreenBtn.classList.add('show');
+            } else {
+              throw new Error('Stream failed to start');
+            }
           } catch (error) {
             console.error(error.message);
             remoteDesktopFeed.innerHTML = '<div class="remote-desktop-placeholder">Connection failed</div>';
