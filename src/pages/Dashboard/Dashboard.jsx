@@ -111,12 +111,11 @@ const Dashboard = () => {
     rutomatrix_ip: { name: "Rutomatrix", iconType: "MonitorSmartphone" },
   };
 
-  const userData = {
-    name: "Admin User",
-    email: "admin@rutomatrix.com",
+  const [userData, setUserData] = useState({
+    name: "",
     avatar: <CircleUserRound size={30} />,
     onLogout: () => console.log("Logging out..."),
-  };
+  });
 
   const toggleTheme = () => {
     const newTheme = !isDarkTheme;
@@ -149,6 +148,10 @@ const Dashboard = () => {
 
           if (matchedDevice) {
             setDeviceEndTime(new Date(matchedDevice.time.end));
+            setUserData((prev) => ({
+              ...prev,
+              name: matchedDevice.user?.user_name || "Unknown User",
+            }));
 
             // Get all available IP types from the device
             const ipTypes = Object.keys(matchedDevice.device)
@@ -279,6 +282,32 @@ const Dashboard = () => {
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
   }, []);
+
+    // Add this useEffect to check for expired bookings
+    useEffect(() => {
+      function checkExpiredBookings() {
+        const now = new Date();
+        setPopupWindows(prev => {
+          return prev.filter(popupInfo => {
+            // Close window if time expired
+            if (new Date(popupInfo.endTime) <= now) {
+              try {
+                if (!popupInfo.window.closed) {
+                  popupInfo.window.close();
+                }
+              } catch (e) {
+                console.error("Error closing window:", e);
+              }
+              return false; // Remove from tracking
+            }
+            return true; // Keep tracking
+          });
+        });
+      }
+  
+      const interval = setInterval(checkExpiredBookings, 1000);
+      return () => clearInterval(interval);
+    }, []);
 
   const openDeviceWindow = async (deviceId, ipInfo = null) => {
     const device = selectedDevices.find((d) => d.id === deviceId);
@@ -1062,16 +1091,16 @@ const Dashboard = () => {
 <script>
     document.addEventListener('DOMContentLoaded', () => {
       // API Endpoints
-      const startCameraAPI = "http://100.68.107.103:8000/start-camera";
-      const stopCameraAPI = "http://100.68.107.103:8000/stop-camera";
-      const startThermalAPI = "http://100.68.107.103:8000/start-thermal";
-      const stopThermalAPI = "http://100.68.107.103:8000/stop-thermal";
-      const cameraFeedAPI = "http://100.68.107.103:8001/camera.mjpg";
-      const thermalFeedAPI = "http://100.68.107.103:8002/thermal";
-      const cameraVerifiedAPI = "http://100.68.107.103:8001/camera_verified";
-      const thermalVerifiedAPI = "http://100.68.107.103:8002/thermal_verified";
-      const startServoAPI = "http://100.68.107.103:8000/start-servo";
-      const stopServoAPI = "http://100.68.107.103:8000/stop-servo";
+      const startCameraAPI = "http://100.124.235.42:8000/start-camera";
+      const stopCameraAPI = "http://100.124.235.42:8000/stop-camera";
+      const startThermalAPI = "http://100.124.235.42:8000/start-thermal";
+      const stopThermalAPI = "http://100.124.235.42:8000/stop-thermal";
+      const cameraFeedAPI = "http://100.124.235.42:8001/camera.mjpg";
+      const thermalFeedAPI = "http://100.124.235.42:8002/thermal";
+      const cameraVerifiedAPI = "http://100.124.235.42:8001/camera_verified";
+      const thermalVerifiedAPI = "http://100.124.235.42:8002/thermal_verified";
+      const startServoAPI = "http://100.124.235.42:8000/start-servo";
+      const stopServoAPI = "http://100.124.235.42:8000/stop-servo";
       const panel = document.getElementById('servo-panel');
       const angleDisplay = document.getElementById('angle-display');
 
@@ -1290,6 +1319,9 @@ resetBtn.addEventListener('click', async () => {
       try {
 
         showLoadingState();
+         // Show loading spinner while stopping services
+          cameraFeed.innerHTML = '<div class="loading-spinner"></div>';
+          thermalFeed.innerHTML = '<div class="loading-spinner"></div>';
 
         // Start the services again in case they were stopped
         const servicesStarted = await Promise.all([
@@ -1331,8 +1363,10 @@ resetBtn.addEventListener('click', async () => {
           cameraFeed.appendChild(cameraImg);
         };
         cameraImg.onerror = () => {
-          cameraFeed.innerHTML = '<div class="feed-Placeholder">Camera feed error</div>';
-          console.error('Camera stream error - retrying in 2s...');
+          //cameraFeed.innerHTML = '<div class="feed-Placeholder">Camera feed error</div>';
+          // Show loading spinner while retry to start services
+          cameraFeed.innerHTML = '<div class="loading-spinner"></div>';
+          console.error('Camera stream error - retrying in 1s...');
           setTimeout(() => {
             cameraImg.src = cameraFeedAPI + '?t=' + Date.now();
           }, 2000);
@@ -1347,8 +1381,10 @@ resetBtn.addEventListener('click', async () => {
           thermalFeed.appendChild(thermalImg);
         };
         thermalImg.onerror = () => {
-          thermalFeed.innerHTML = '<div class="feed-Placeholder">Thermal feed error</div>';
-          console.error('Thermal stream error - retrying in 2s...');
+          //thermalFeed.innerHTML = '<div class="feed-Placeholder">Thermal feed error</div>';
+          // Show loading spinner while retry to start services
+          thermalFeed.innerHTML = '<div class="loading-spinner"></div>';
+          console.error('Thermal stream error - retrying in 1s...');
           setTimeout(() => {
             thermalImg.src = thermalFeedAPI + '?t=' + Date.now();
           }, 2000);
@@ -1440,7 +1476,7 @@ resetBtn.addEventListener('click', async () => {
       
     
     //Servo Control Script
-    const SERVER = "http://100.68.107.103:8003";  //RPi backend URL
+    const SERVER = "http://100.124.235.42:8003";  //RPi backend URL
 
     let servoRunning = false;  // Track state
 
@@ -1978,8 +2014,8 @@ resetBtn.addEventListener('click', async () => {
   </script>
 </body>
 </html>`;
-    } else if (isPC){
-      const ip_add = '100.109.50.57'
+    } else if (isPC) {
+      const ip_add = "100.109.50.57";
       popupHTML = `<!DOCTYPE html>
 <html>
 <head>
@@ -2547,13 +2583,15 @@ resetBtn.addEventListener('click', async () => {
 </body>
 </html>`;
     } else if (isStream1 || isStream2) {
-      const ip_add = '100.109.50.57';
-      const streamPort = isStream1 ? '9003' : '8888';
-      const streamHost = isStream1 ? '9002' : '8080';
+      const ip_add = "100.109.50.57";
+      const streamPort = isStream1 ? "9003" : "8888";
+      const streamHost = isStream1 ? "9002" : "8080";
 
       const port = `${ip_add}:${streamPort}`;
       const portAlt = `${ip_add}:${streamHost}`;
-      const testConnection = isStream1 ? `http://${port}/start_stream1` : `http://${port}/start_stream2`
+      const testConnection = isStream1
+        ? `http://${port}/start_stream1`
+        : `http://${port}/start_stream2`;
       popupHTML = `<!DOCTYPE html>
 <html>
 <head>
@@ -3024,7 +3062,7 @@ resetBtn.addEventListener('click', async () => {
 </body>
 </html>`;
     } else if (isOs) {
-      const ip_add = '100.109.50.57';
+      const ip_add = "100.109.50.57";
       popupHTML = `<!DOCTYPE html>
 <html>
 <head>
@@ -3042,7 +3080,7 @@ resetBtn.addEventListener('click', async () => {
       overflow: hidden;
     }
 
-    .pc-container {
+    .os-container {
       display: flex;
       flex-direction: column;
       height: 100%;
@@ -3112,7 +3150,7 @@ resetBtn.addEventListener('click', async () => {
       background: #FF6A00;
     }
 
-    .pc-content {
+    .os-content {
       flex: 1;
       display: flex;
       flex-direction: column;
@@ -3245,7 +3283,7 @@ resetBtn.addEventListener('click', async () => {
   </style>
 </head>
 <body>
-  <div class="pc-container">
+  <div class="os-container">
     <div class="header">
       <div class="device-info">
         <div class="device-name-row">
@@ -3260,7 +3298,7 @@ resetBtn.addEventListener('click', async () => {
       </div>
     </div>
 
-    <div class="pc-content">
+    <div class="os-content">
       <div class="container">
         <h2>Available ISO files:</h2>
         <div class="iso-container">
@@ -3358,7 +3396,6 @@ resetBtn.addEventListener('click', async () => {
   </script>
 </body>
 </html>`;
-
     } else if (isAudio) {
       popupHTML = `<!DOCTYPE html>
 <html>
@@ -3918,9 +3955,9 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>`;
-      } else if (isSystemInfo || isUsbSharing || isFirmware) {
-          let deviceIp = device.ipAddress.split("/")[0];
-        let iframeURL = "";
+    } else if (isSystemInfo || isUsbSharing || isFirmware) {
+      let deviceIp = device.ipAddress.split("/")[0];
+      let iframeURL = "";
 
       if (isSystemInfo) {
         iframeURL = `http://${deviceIp}:8001/`;
@@ -4473,6 +4510,13 @@ body {
       "width=1000,height=700,left=100,top=100,resizable=yes"
     );
 
+    // After creating the popup, add it to tracked windows
+    setPopupWindows(prev => [...prev, {
+      id: deviceId,
+      window: popup,
+      endTime: deviceEndTime
+    }]);
+
     if (!popup) {
       URL.revokeObjectURL(url);
       alert("Please allow popups for this site");
@@ -4520,7 +4564,8 @@ body {
     const cleanup = () => {
       clearInterval(timerInterval);
       URL.revokeObjectURL(url);
-      setActiveDevices((prev) => prev.filter((id) => id !== deviceId));
+      setActiveDevices(prev => prev.filter(id => id !== deviceId));
+      setPopupWindows(prev => prev.filter(p => p.id !== deviceId));
     };
 
     popup.onbeforeunload = cleanup;
@@ -4561,7 +4606,6 @@ body {
               <div className="user-avatar">{userData.avatar}</div>
               <div className="user-details">
                 <div className="user-name">{userData.name}</div>
-                <div className="user-email">{userData.email}</div>
               </div>
             </div>
 
