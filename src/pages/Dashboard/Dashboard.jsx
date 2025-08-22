@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import Navbar from "../../components/Navbar/Navbar";
 import axios from "axios";
 import "./Dashboard.css";
-import { useLocation, useParams, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   MonitorSmartphone,
   ThermometerSun,
@@ -79,7 +79,6 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { device_id } = useParams();
   const [popupWindows, setPopupWindows] = useState([]);
 
   const location = useLocation();
@@ -92,7 +91,6 @@ const Dashboard = () => {
 
   const queryParams = new URLSearchParams(location.search);
   const deviceIdParam = queryParams.get("device");
-  const ipTypesParam = queryParams.get("ip_type");
   const reservationIdParam = queryParams.get("reservation");
 
   const driverTypes = {
@@ -283,31 +281,31 @@ const Dashboard = () => {
     return () => window.removeEventListener("message", handleMessage);
   }, []);
 
-    // Add this useEffect to check for expired bookings
-    useEffect(() => {
-      function checkExpiredBookings() {
-        const now = new Date();
-        setPopupWindows(prev => {
-          return prev.filter(popupInfo => {
-            // Close window if time expired
-            if (new Date(popupInfo.endTime) <= now) {
-              try {
-                if (!popupInfo.window.closed) {
-                  popupInfo.window.close();
-                }
-              } catch (e) {
-                console.error("Error closing window:", e);
+  // Add this useEffect to check for expired bookings
+  useEffect(() => {
+    function checkExpiredBookings() {
+      const now = new Date();
+      setPopupWindows((prev) => {
+        return prev.filter((popupInfo) => {
+          // Close window if time expired
+          if (new Date(popupInfo.endTime) <= now) {
+            try {
+              if (!popupInfo.window.closed) {
+                popupInfo.window.close();
               }
-              return false; // Remove from tracking
+            } catch (e) {
+              console.error("Error closing window:", e);
             }
-            return true; // Keep tracking
-          });
+            return false; // Remove from tracking
+          }
+          return true; // Keep tracking
         });
-      }
-  
-      const interval = setInterval(checkExpiredBookings, 1000);
-      return () => clearInterval(interval);
-    }, []);
+      });
+    }
+
+    const interval = setInterval(checkExpiredBookings, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const openDeviceWindow = async (deviceId, ipInfo = null) => {
     const device = selectedDevices.find((d) => d.id === deviceId);
@@ -4511,11 +4509,14 @@ body {
     );
 
     // After creating the popup, add it to tracked windows
-    setPopupWindows(prev => [...prev, {
-      id: deviceId,
-      window: popup,
-      endTime: deviceEndTime
-    }]);
+    setPopupWindows((prev) => [
+      ...prev,
+      {
+        id: deviceId,
+        window: popup,
+        endTime: deviceEndTime,
+      },
+    ]);
 
     if (!popup) {
       URL.revokeObjectURL(url);
@@ -4564,8 +4565,8 @@ body {
     const cleanup = () => {
       clearInterval(timerInterval);
       URL.revokeObjectURL(url);
-      setActiveDevices(prev => prev.filter(id => id !== deviceId));
-      setPopupWindows(prev => prev.filter(p => p.id !== deviceId));
+      setActiveDevices((prev) => prev.filter((id) => id !== deviceId));
+      setPopupWindows((prev) => prev.filter((p) => p.id !== deviceId));
     };
 
     popup.onbeforeunload = cleanup;

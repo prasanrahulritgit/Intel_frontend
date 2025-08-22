@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
-import "./LoginSignupPage.css";
+import { useNavigate } from "react-router-dom";
+import "./Landingpage.css";
 import ThreeDModel from "./ThreeDModel";
 import {
-  User,
-  Lock,
   ArrowRight,
   SquareArrowOutUpRight,
-  AlertCircle,
   ChevronUp,
   ChevronRight,
   ChevronLeft,
@@ -15,11 +13,9 @@ import {
   ChartNoAxesCombined,
   Split,
   X,
-  Box,
   LassoSelect,
   Rotate3d,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import rutomatrix from "../../assets/RUTOMATRIX-bg1.png";
 import sl1 from "../../assets/Sl1.png";
 import sl2 from "../../assets/Sl2.png";
@@ -30,25 +26,18 @@ import logo from "../../assets/RutoMatrix_Nonbackground.png";
 import tes_logo from "../../assets/tessolve.png";
 import view1 from "../../assets/images/Top1.png";
 import view2 from "../../assets/images/Fan1.png";
-import view2_ from "../../assets/images/view2_.png";
 import view3 from "../../assets/images/Ports.png";
-import view4 from "../../assets/images/view4.png";
 import view5 from "../../assets/images/Sideview.png";
 
-const LoginSignupPage = ({ setIsAuthenticated }) => {
+const Landingpage = ({ setIsAuthenticated }) => {
   const [activeSection, setActiveSection] = useState("hero");
   const [view, setView] = useState("isometric");
   const [scrolled, setScrolled] = useState(false);
-  const [username, setUsername] = useState("");
   const [atTop, setAtTop] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
   const slideInterval = useRef();
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [showLoginOverlay, setShowLoginOverlay] = useState(false);
   const [show3DModel, setShow3DModel] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
   const [dragHintVisible, setDragHintVisible] = useState(true);
   const featureSlides = [
     {
@@ -152,6 +141,8 @@ const LoginSignupPage = ({ setIsAuthenticated }) => {
       window.removeEventListener("touchstart", handleInteraction);
     };
   }, [show3DModel]);
+  
+  const navigate = useNavigate();
 
   const handleLaunchDashboard = () => {
     // Redirect to external login URL
@@ -794,7 +785,7 @@ const LoginSignupPage = ({ setIsAuthenticated }) => {
         <div className="container">
           <div className="footer-content">
             <div className="footer-logo"> </div>
-            <img src={tes_logo} className="footer-logo-img" />
+            <img src={tes_logo} className="footer-logo-img" alt="Tessolve Logo" />
           </div>
           <div className="footer-links">
             <h4>Product Engineering Services</h4>
@@ -917,4 +908,4 @@ const LoginSignupPage = ({ setIsAuthenticated }) => {
   );
 };
 
-export default LoginSignupPage;
+export default Landingpage;

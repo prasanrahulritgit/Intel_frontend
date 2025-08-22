@@ -3,7 +3,8 @@ import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import Dashboard from "./pages/Dashboard/Dashboard";
 import "./index.css";
 import "@fontsource/poppins"; // Defaults to weight 400
-import LoginSignupPage from './components/Auth/LoginSignupPage';
+import Landingpage from './components/Auth/Landingpage';
+//import Login from "./components/Login/Login";
 import { Navigate } from 'react-router-dom';
 // In your main App.js or index.js
 
@@ -29,7 +30,8 @@ const App = () => {
     <Router>
       <Routes>
         <Route path="/" element={<Navigate to="/auth" replace />} />
-        <Route path="/auth" element={<LoginSignupPage />} />
+        <Route path="/auth" element={<Landingpage />} />
+        {/* <Route path="/auth/login" element={<Login />} /> */}
         <Route path="/dashboard" element={<Dashboard />} />
       </Routes>
     </Router>
