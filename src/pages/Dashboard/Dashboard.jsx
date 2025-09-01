@@ -94,17 +94,17 @@ const Dashboard = () => {
   const reservationIdParam = queryParams.get("reservation");
 
   const driverTypes = {
-    ct1_ip: { name: "CT", iconType: "ThermoCamIcon" },
+    // ct1_ip: { name: "CT", iconType: "ThermoCamIcon" },
     pc_ip: { name: "Virtual Desk", iconType: "MonitorSmartphone" },
-    pulse1_ip: { name: "Pulse", iconType: "ChartColumnStacked" },
+    // pulse1_ip: { name: "Pulse", iconType: "ChartColumnStacked" },
     usb_ip: { name: "USB File Sharing", iconType: "UsbIcon" },
     system_ip: { name: "System State Control & ATX", iconType: "CpuIcon" },
-    bias_ip: { name: "Firm Flashing", iconType: "ZapIcon" },
-    os_ip: { name: "OS Flashing", iconType: "HardDriveIcon" },
-    cmd_ip: { name: "Command Prompt", iconType: "TerminalIcon" },
+    // bias_ip: { name: "Firm Flashing", iconType: "ZapIcon" },
+    // os_ip: { name: "OS Flashing", iconType: "HardDriveIcon" },
+    // cmd_ip: { name: "Command Prompt", iconType: "TerminalIcon" },
     audio_ip: { name: "Audio Transmission", iconType: "Volume2Icon" },
-    stream1_ip: { name: "Stream 1", iconType: "VideoIcon" },
-    stream2_ip: { name: "Stream 2", iconType: "VideoIcon" },
+    // stream1_ip: { name: "Stream 1", iconType: "VideoIcon" },
+    // stream2_ip: { name: "Stream 2", iconType: "VideoIcon" },
     postcode_ip: { name: "Post Code Reading", iconType: "CodeIcon" },
     rutomatrix_ip: { name: "Rutomatrix", iconType: "MonitorSmartphone" },
   };
@@ -179,21 +179,21 @@ const Dashboard = () => {
             if (matchedDevice.device.rutomatrix_ip) {
               const rutomatrixIp = matchedDevice.device.rutomatrix_ip;
               const subDrivers = [
-                { name: "Stream 1", endpoint: "stream1", icon: "VideoIcon" },
-                { name: "Stream 2", endpoint: "stream2", icon: "VideoIcon" },
+                // { name: "Stream 1", endpoint: "stream1", icon: "VideoIcon" },
+                // { name: "Stream 2", endpoint: "stream2", icon: "VideoIcon" },
                 { name: "USB File Sharing", endpoint: "usb", icon: "UsbIcon" },
                 {
                   name: "System State Control & ATX",
                   endpoint: "systemstate_atx",
                   icon: "CpuIcon",
                 },
-                {
-                  name: "Firmware Flashing",
-                  endpoint: "bias",
-                  icon: "ZapIcon",
-                },
-                { name: "OS Flashing", endpoint: "os", icon: "HardDriveIcon" },
-                //{ name: "Command Prompt", endpoint: "cmd", icon: "TerminalIcon" },
+                // {
+                //   name: "Firmware Flashing",
+                //   endpoint: "bias",
+                //   icon: "ZapIcon",
+                // },
+                // { name: "OS Flashing", endpoint: "os", icon: "HardDriveIcon" },
+                // //{ name: "Command Prompt", endpoint: "cmd", icon: "TerminalIcon" },
                 {
                   name: "Audio Transmission",
                   endpoint: "audio",
