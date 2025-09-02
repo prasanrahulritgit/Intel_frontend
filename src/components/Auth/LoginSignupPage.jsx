@@ -18,6 +18,7 @@ import {
   Box,
   LassoSelect,
   Rotate3d,
+  MoveRight,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import rutomatrix from "../../assets/RUTOMATRIX-bg1.png";
@@ -25,7 +26,7 @@ import sl1 from "../../assets/Sl1.png";
 import sl2 from "../../assets/Sl2.png";
 import sl3 from "../../assets/bg3_.png";
 import sl4 from "../../assets/Sl4.png";
-import sl5 from "../../assets/Sl5.png";
+import sl5 from "../../assets/Sl5.jpg";
 import logo from "../../assets/RutoMatrix_Nonbackground.png";
 import tes_logo from "../../assets/tessolve.png";
 import view1 from "../../assets/images/Top1.png";
@@ -52,7 +53,7 @@ const LoginSignupPage = ({ setIsAuthenticated }) => {
   const [dragHintVisible, setDragHintVisible] = useState(true);
   const featureSlides = [
     {
-      title: "4K Video Streaming",
+      title: "Virtual Desk",
       description:
         "Experience crystal-clear video with our advanced streaming technology.",
       image: sl1,
@@ -64,7 +65,7 @@ const LoginSignupPage = ({ setIsAuthenticated }) => {
       image: sl2,
     },
     {
-      title: "Integrated Oscilloscope",
+      title: "Rutoscope",
       description:
         "Built-in digital oscilloscope for signal monitoring and measurement",
       image: sl3,
@@ -76,9 +77,9 @@ const LoginSignupPage = ({ setIsAuthenticated }) => {
       image: sl4,
     },
     {
-      title: "USB Over Network",
+      title: "Rutocam",
       description:
-        "Seamless USB device sharing across networked systems with full functionality.",
+        "Real-time thermal imaging with precision sensors for diagnostics, safety, monitoring, and seamless Rutomatrix integration.",
       image: sl5,
     },
   ];
@@ -474,9 +475,9 @@ const LoginSignupPage = ({ setIsAuthenticated }) => {
             <h2 className="section-title">Overview</h2>
             <div className="overview-grid">
               <div className="overview-card">
-                <h3>Your ultimate solution for remote server management</h3>
+                <h3>Your ultimate solution for remote test management</h3>
                 <p>
-                  Discover how Rutomatrix revolutionizes server management with
+                  Discover how Rutomatrix revolutionizes test management with
                   advanced remote control and monitoring. Our platform combines
                   state-of-the-art hardware and software to deliver unparalleled
                   efficiency and flexibility in operations.
@@ -498,7 +499,7 @@ const LoginSignupPage = ({ setIsAuthenticated }) => {
           <div className="features-grid">
             <div className="feature-card">
               <div className="feature-icon">🎥</div>
-              <h3>4K Video Streaming</h3>
+              <h3>Virtual Desk</h3>
               <p>
                 Ultra-high-definition streaming with low latency and adaptive
                 bitrate technology.
@@ -516,19 +517,20 @@ const LoginSignupPage = ({ setIsAuthenticated }) => {
 
             <div className="feature-card">
               <div className="feature-icon">📈</div>
-              <h3>Integrated Oscilloscope</h3>
+              <h3>Rutoscope</h3>
               <p>
-                Built-in oscilloscope with logic analyzer and waveform generator
-                replacing traditional lab tools.
+                Rutoscope is a powerful logic analyzer for modern digital systems.
+Supports all major protocols with deep visibility and precision.
+Monitor, decode, and analyze communication seamlessly.
               </p>
             </div>
 
             <div className="feature-card">
-              <div className="feature-icon">🔗</div>
-              <h3>USB Over Network</h3>
+              <div className="feature-icon">📷</div>
+              <h3>Rutocam</h3>
               <p>
-                Seamless USB device sharing across networked systems with full
-                functionality.
+                Real-time thermal imaging with precision sensors—detect heat signatures for diagnostics,
+                 safety, and monitoring, seamlessly integrated with Rutomatrix.
               </p>
             </div>
 
@@ -612,7 +614,7 @@ const LoginSignupPage = ({ setIsAuthenticated }) => {
             Advantages of remote server management
           </h2>
           <p className="section-subtitle">
-            Discover why RutoMatrix stands out from the competition with these
+            Discover why Rutomatrix stands out from the competition with these
             core benefits
           </p>
 
@@ -674,18 +676,18 @@ const LoginSignupPage = ({ setIsAuthenticated }) => {
         <div className="container">
           <h2 className="section-title">In Action</h2>
           <p className="section-description">
-            See how RutoMatrix performs in real-world scenarios
+            See how Rutomatrix performs in real-world scenarios
           </p>
 
           {/* First Showcase Item - Image Left */}
           <div className="showcase-item left-layout">
             <div className="showcase-image">
-              <img src={view1} alt="RutoMatrix Hardware Front View" />
+              <img src={view1} alt="Rutomatrix Hardware Front View" />
             </div>
             <div className="showcase-content">
               <h3>Precision Engineering</h3>
               <p>
-                Every RutoMatrix unit undergoes quality testing to ensure
+                Every Rutomatrix unit undergoes quality testing to ensure
                 reliability in demanding environments. Our precision
                 manufacturing guarantees consistent performance.
               </p>
@@ -702,7 +704,7 @@ const LoginSignupPage = ({ setIsAuthenticated }) => {
             <div className="showcase-content">
               <h3>Robust Software & Hardware Integration</h3>
               <p>
-                RutoMatrix offers seamless integration between hardware and
+                Rutomatrix offers seamless integration between hardware and
                 software, ensuring efficient development, deployment, and
                 diagnostics across critical interfaces.
               </p>
@@ -721,19 +723,19 @@ const LoginSignupPage = ({ setIsAuthenticated }) => {
               </ul>
             </div>
             <div className="showcase-image">
-              <img src={view2} alt="RutoMatrix Internal Components" />
+              <img src={view2} alt="Rutomatrix Internal Components" />
             </div>
           </div>
 
           {/* Third Showcase Item - Image Left */}
           <div className="showcase-item left-layout">
             <div className="showcase-image">
-              <img src={view3} alt="RutoMatrix Connectivity Options" />
+              <img src={view3} alt="Rutomatrix Connectivity Options" />
             </div>
             <div className="showcase-content">
               <h3>Comprehensive Connectivity</h3>
               <p>
-                With multiple interface options, RutoMatrix seamlessly
+                With multiple interface options, Rutomatrix seamlessly
                 integrates with your existing infrastructure. The rear panel
                 provides easy access to all connections.
               </p>
@@ -750,7 +752,7 @@ const LoginSignupPage = ({ setIsAuthenticated }) => {
             <div className="showcase-content">
               <h3>Precision I/O & Thermal Design</h3>
               <p>
-                RutoMatrix is engineered with versatile I/O options and
+                Rutomatrix is engineered with versatile I/O options and
                 efficient thermal solutions, ensuring reliable performance
                 across diverse applications and environments.
               </p>
@@ -764,7 +766,7 @@ const LoginSignupPage = ({ setIsAuthenticated }) => {
             </div>
 
             <div className="showcase-image">
-              <img src={view5} alt="RutoMatrix Internal Components" />
+              <img src={view5} alt="Rutomatrix Internal Components" />
             </div>
           </div>
         </div>
@@ -772,11 +774,11 @@ const LoginSignupPage = ({ setIsAuthenticated }) => {
 
       {/* Contact Section */}
       <section id="contact" className="contact-section">
-        <div className="container">
+        <div className="container" style={{ marginRight: '215px' }}>
           <div className="contact-content">
             <h2>Ready to Transform Your Workflow?</h2>
             <p>
-              Contact our team to discuss how RutoMatrix can meet your specific
+              Contact our team to discuss how Rutomatrix can meet your specific
               requirements.
             </p>
             <button
