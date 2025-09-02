@@ -129,7 +129,7 @@ const Dashboard = () => {
     try {
       setLoading(true);
       const response = await axios.get(
-        "http://127.0.0.1:5000/api/booked-devices"
+        "http://13.62.110.122:5000/api/booked-devices"
       );
 
       const responseData = response.data;

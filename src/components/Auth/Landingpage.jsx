@@ -146,7 +146,7 @@ const Landingpage = ({ setIsAuthenticated }) => {
 
   const handleLaunchDashboard = () => {
     // Redirect to external login URL
-    window.location.href = "http://127.0.0.1:5000/login";
+    window.location.href = "http://13.62.110.122:5000/login";
   };
 
   useEffect(() => {

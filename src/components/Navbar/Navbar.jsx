@@ -19,11 +19,11 @@ const Navbar = ({ isDarkTheme, toggleTheme, userData }) => {
   });
 
   const handleBackToReservations = () => {
-    window.location.href = "http://127.0.0.1:5000/reservations";
+    window.location.href = "http://13.62.110.122:5000/reservations";
   };
 
   const navigateToReservations = () => {
-    window.location.href = "http://127.0.0.1:5000/reservations";
+    window.location.href = "http://13.62.110.122:5000/reservations";
   };
 
   const fetchDeviceData = async (deviceId) => {
@@ -42,7 +42,7 @@ const Navbar = ({ isDarkTheme, toggleTheme, userData }) => {
       console.log("Local storage:", localStorage);
 
       const response = await axios.get(
-        "http://127.0.0.1:5000/api/booked-devices",
+        "http://13.62.110.122:5000/api/booked-devices",
         {
           withCredentials: true,
           headers: {
