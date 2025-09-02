@@ -1,13 +1,13 @@
-import { useState, useEffect, useRef } from "react";
-import axios from "axios";
+import { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
 import rutomatrixLogo from "../../assets/images/rutomatrix.png";
 import tessolveLogo from "../../assets/images/tessolve.png";
 import "./Navbar.css";
-import { ChevronLeft, TimerIcon } from "lucide-react";
+import { ChevronLeft, TimerIcon } from 'lucide-react'; 
 
 const Navbar = ({ isDarkTheme, toggleTheme, userData }) => {
   const [timeLeft, setTimeLeft] = useState(null);
-  const [deviceName, setDeviceName] = useState("");
+  const [deviceName, setDeviceName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isLast10Minutes, setIsLast10Minutes] = useState(false);
@@ -15,127 +15,106 @@ const Navbar = ({ isDarkTheme, toggleTheme, userData }) => {
   const alertShownRef = useRef({
     thirtyMinutes: false,
     tenMinutes: false,
-    expired: false,
+    expired: false
   });
 
   const handleBackToReservations = () => {
-    window.location.href = "http://13.62.110.122:5000/reservations";
+    window.location.href = "http://100.64.113.21:5000/reservations";
   };
 
   const navigateToReservations = () => {
-    window.location.href = "http://13.62.110.122:5000/reservations";
+    window.location.href = "http://100.64.113.21:5000/reservations";
   };
 
-  const fetchDeviceData = async (deviceId) => {
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      if (!deviceId) {
-        throw new Error("No device ID provided");
-      }
-
-      // Enhanced debug logging
-      console.log("Making authenticated request to /api/booked-devices");
-      console.log("Current cookies:", document.cookie);
-      console.log("Session storage:", sessionStorage);
-      console.log("Local storage:", localStorage);
-
-      const response = await axios.get(
-        "http://13.62.110.122:5000/api/booked-devices",
-        {
-          withCredentials: true,
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-            "X-Requested-With": "XMLHttpRequest",
-          },
-          // Ensure axios doesn't try to parse HTML as JSON
-          transformResponse: [
-            (data) => {
-              if (
-                typeof data === "string" &&
-                data.trim().startsWith("<!DOCTYPE html>")
-              ) {
-                throw new Error("Received HTML response when expecting JSON");
-              }
-              return data;
-            },
-          ],
-        }
-      );
-
-      // Debug the actual response before parsing
-      console.log("API response headers:", response.headers);
-      console.log(
-        "API response content-type:",
-        response.headers["content-type"]
-      );
-      console.log(
-        "API response data sample:",
-        String(response.data).slice(0, 100)
-      );
-
-      // Force JSON parsing if needed
-      const responseData =
-        typeof response.data === "string"
-          ? JSON.parse(response.data)
-          : response.data;
-
-      if (!responseData?.data?.booked_devices) {
-        throw new Error("API returned invalid data structure");
-      }
-
-      const device = responseData.data.booked_devices.find(
-        (d) =>
-          d.device?.id === deviceId ||
-          d.id === deviceId.toString() ||
-          d.device_id === deviceId
-      );
-
-      if (!device) {
-        throw new Error(`Device ${deviceId} not found in bookings`);
-      }
-
-      return {
-        name: `Device ${parseInt(
-          device.device?.id || device.id || "Unknown Device"
-        )}`,
-        endTime: new Date(device.time?.end || device.end_time),
-      };
-    } catch (error) {
-      console.error("API request failed:", error);
-
-      // Handle specific error cases
-      if (error.message.includes("Received HTML response")) {
-        console.warn("Authentication required - redirecting to login");
-        window.location.href = `/auth/login?redirect=${encodeURIComponent(
-          window.location.pathname
-        )}`;
-        return null;
-      }
-
-      if (error.response?.status === 401) {
-        window.location.href = "/auth/login";
-        return null;
-      }
-
-      setError(error.message || "Failed to load device data");
-      return null;
-    } finally {
-      setIsLoading(false);
+const fetchDeviceData = async (deviceId) => {
+  try {
+    setIsLoading(true);
+    setError(null);
+    
+    if (!deviceId) {
+      throw new Error('No device ID provided');
     }
-  };
+
+    // Enhanced debug logging
+    console.log('Making authenticated request to /api/booked-devices');
+    console.log('Current cookies:', document.cookie);
+    console.log('Session storage:', sessionStorage);
+    console.log('Local storage:', localStorage);
+
+    const response = await axios.get('http://100.64.113.21:5000/api/booked-devices', {
+      withCredentials: true,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      // Ensure axios doesn't try to parse HTML as JSON
+      transformResponse: [(data) => {
+        if (typeof data === 'string' && data.trim().startsWith('<!DOCTYPE html>')) {
+          throw new Error('Received HTML response when expecting JSON');
+        }
+        return data;
+      }]
+    });
+
+    // Debug the actual response before parsing
+    console.log('API response headers:', response.headers);
+    console.log('API response content-type:', response.headers['content-type']);
+    console.log('API response data sample:', String(response.data).slice(0, 100));
+
+    // Force JSON parsing if needed
+    const responseData = typeof response.data === 'string' 
+      ? JSON.parse(response.data) 
+      : response.data;
+
+    if (!responseData?.data?.booked_devices) {
+      throw new Error('API returned invalid data structure');
+    }
+
+    const device = responseData.data.booked_devices.find(d => 
+      d.device?.id === deviceId || 
+      d.id === deviceId.toString() || 
+      d.device_id === deviceId
+    );
+
+    if (!device) {
+      throw new Error(`Device ${deviceId} not found in bookings`);
+    }
+
+    return {
+      name: `Device ${parseInt(device.device?.id || device.id || 'Unknown Device')}`,
+      endTime: new Date(device.time?.end || device.end_time)
+    };
+
+  } catch (error) {
+    console.error('API request failed:', error);
+    
+    // Handle specific error cases
+    if (error.message.includes('Received HTML response')) {
+      console.warn('Authentication required - redirecting to login');
+      window.location.href = `/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+      return null;
+    }
+    
+    if (error.response?.status === 401) {
+      window.location.href = '/auth/login';
+      return null;
+    }
+    
+    setError(error.message || 'Failed to load device data');
+    return null;
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const playAlertSound = () => {
     try {
-      const audio = new Audio(
-        "https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3"
-      );
+      const audio = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3');
       audio.volume = 0.3;
-      audio.play().catch((e) => console.log("Audio play failed:", e));
+      audio.play().catch(e => console.log('Audio play failed:', e));
     } catch (e) {
-      console.log("Audio error:", e);
+      console.log('Audio error:', e);
     }
   };
 
@@ -160,7 +139,7 @@ const Navbar = ({ isDarkTheme, toggleTheme, userData }) => {
       thirtyMinutes: false,
       tenMinutes: false,
       expired: false,
-      isAlertActive: false,
+      isAlertActive: false
     };
     setIsLast10Minutes(false);
 
@@ -173,11 +152,7 @@ const Navbar = ({ isDarkTheme, toggleTheme, userData }) => {
       const minutes = Math.floor((difference / (1000 * 60)) % 60);
       const seconds = Math.floor((difference / 1000) % 60);
 
-      setTimeLeft(
-        `${hours.toString().padStart(2, "0")}:${minutes
-          .toString()
-          .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
-      );
+      setTimeLeft(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
 
       if (minutesLeft <= 10 && !isLast10Minutes) {
         setIsLast10Minutes(true);
@@ -185,7 +160,7 @@ const Navbar = ({ isDarkTheme, toggleTheme, userData }) => {
 
       if (difference <= 0) {
         clearInterval(timerRef.current);
-        setTimeLeft("00:00:00");
+        setTimeLeft('00:00:00');
         if (!alertShownRef.current.expired) {
           await showAlert(`Your booking for ${deviceName} has expired!`);
           alertShownRef.current.expired = true;
@@ -203,7 +178,7 @@ const Navbar = ({ isDarkTheme, toggleTheme, userData }) => {
 
   useEffect(() => {
     if (!userData?.device_id) {
-      setError("No device selected");
+      setError('No device selected');
       setIsLoading(false);
       return;
     }
@@ -235,8 +210,14 @@ const Navbar = ({ isDarkTheme, toggleTheme, userData }) => {
           <img src={rutomatrixLogo} alt="Rutomatrix Logo" className="logo" />
         </div>
         <div className="navbar-right">
-          <button className="back-button" onClick={handleBackToReservations}>
-            <ChevronLeft size={24} className="back-icon" />
+          <button 
+            className="back-button" 
+            onClick={handleBackToReservations}
+          >
+            <ChevronLeft 
+              size={24} 
+              className="back-icon"
+            />
             <span className="back-text">Back</span>
           </button>
 
@@ -247,16 +228,10 @@ const Navbar = ({ isDarkTheme, toggleTheme, userData }) => {
           ) : timeLeft ? (
             <div className={`device-timer`}>
               <span className="Device-name" title={deviceName}>
-                {deviceName.length > 12
-                  ? `${deviceName.substring(0, 10)}...`
-                  : deviceName}{" "}
-                -
+                {deviceName.length > 12 ? `${deviceName.substring(0, 10)}...` : deviceName} -
               </span>
-              <span
-                className={`timer ${isLast10Minutes ? "last-10-minutes" : ""}`}
-              >
-                <TimerIcon size={20} style={{ marginRight: "4px" }} />{" "}
-                {timeLeft}
+              <span className={`timer ${isLast10Minutes ? 'last-10-minutes' : ''}`}> 
+                <TimerIcon size={20} style={{ marginRight: '4px'}} /> {timeLeft} 
               </span>
             </div>
           ) : (
