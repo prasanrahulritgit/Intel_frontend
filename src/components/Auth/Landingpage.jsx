@@ -771,11 +771,14 @@ const Landingpage = ({ setIsAuthenticated }) => {
               requirements.
             </p>
             <button
-              className="contact-btn"
-              onClick={() => scrollToSection("hero")}
-            >
-              Contact us <ArrowRight color="#ffffff" />
-            </button>
+  className="contact-btn"
+  onClick={() =>
+    window.open("https://embedded.tessolve.com/contact-us/", "_blank")
+  }
+>
+  Contact us <ArrowRight color="#ffffff" />
+</button>
+
           </div>
         </div>
       </section>

@@ -1993,7 +1993,7 @@ resetBtn.addEventListener('click', async () => {
 </body>
 </html>`;
     } else if (isPC) {
-      const ip_add = ipAddress;
+      const ip_add = "100.109.50.57"
       popupHTML = `<!DOCTYPE html>
   <html>
   <head>
@@ -2612,7 +2612,7 @@ resetBtn.addEventListener('click', async () => {
         
         console.log('Sending shortcut:', action);
         
-        fetch(\`http://\${ip_add}:5000/shortcut/\${action}\`, { 
+        fetch(\`http://100.109.50.57:5000/shortcut/\${action}\`, { 
           method: "POST",
           headers: { "Content-Type": "application/json" }
         })
@@ -4199,8 +4199,8 @@ document.addEventListener('DOMContentLoaded', () => {
 </html>`;
     } else if (isPostcode) {
       popupHTML = `<!DOCTYPE html>
-<html>
-<head>
+  <html>
+  <head>
   <title>${title}</title>
   ${postMessageScript}
   ${timerScript}
@@ -4294,24 +4294,28 @@ body {
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       text-align: center;
-      margin-top: 80px;
+      margin-top: 20px;
       width: 100%;
+      flex: 1;
+      overflow: hidden;
     }
 
     .postcode-display {
       background: #1E1E1E;
       border: 2px solid #0971b3;
       border-radius: 12px;
-      padding: 40px;
+      padding: 20px;
       margin: 20px;
-      min-width: 300px;
-      min-height: 200px;
+      width: calc(100% - 40px);
+      max-width: 800px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
+      flex: 1;
+      overflow: hidden;
     }
 
     .postcode-label {
@@ -4320,18 +4324,53 @@ body {
       margin-bottom: 15px;
     }
 
-    .postcode-value {
-      font-size: 36px;
-      font-weight: bold;
-      color: #ff6a00;
-      letter-spacing: 2px;
+    .postcode-terminal {
+      width: 100%;
+      max-height: 400px;
+      overflow-y: auto;
+      background: #000000;
+      border: 1px solid #333;
+      border-radius: 6px;
+      padding: 15px;
       font-family: 'Courier New', monospace;
+      font-size: 16px;
+      line-height: 1.4;
+    }
+
+    .postcode-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .postcode-item {
+      color: #00ff00;
+      padding: 2px 0;
+      border-left: 3px solid transparent;
+      padding-left: 10px;
+      animation: fadeIn 0.3s ease-in;
+    }
+
+    .postcode-item.current {
+      color: #ff6a00;
+      border-left-color: #ff6a00;
+      font-weight: bold;
+    }
+
+    .postcode-item.final {
+      color: #ffffff;
+      background: #ff6a00;
+      padding: 5px 10px;
+      border-radius: 4px;
+      margin: 5px 0;
+      animation: pulse 0.5s ease-in-out;
     }
 
     .status-message {
       font-size: 16px;
       color: #BBBBBB;
       margin-top: 20px;
+      min-height: 20px;
     }
 
     .loading {
@@ -4434,8 +4473,27 @@ body {
   font-weight: bold;
 }
 
+.cursor {
+  animation: blink 1s infinite;
+}
+
     @keyframes spin {
       to { transform: rotate(360deg); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateX(-10px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
     }
 
     .hidden {
@@ -4458,12 +4516,11 @@ body {
       
       .postcode-display {
         margin: 10px;
-        padding: 30px;
-        min-width: 250px;
+        padding: 15px;
       }
       
-      .postcode-value {
-        font-size: 28px;
+      .postcode-terminal {
+        font-size: 14px;
       }
     }
   </style>
@@ -4480,18 +4537,23 @@ body {
         <div class="controls">
         <button class="refresh-btn" id="refresh-btn">
           <svg viewBox="0 0 24 24" width="16" height="16">
-            <path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" fill="currentColor"/>
+            <path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" fill="currentColor"/>
           </svg>
         </button>
-        <button class="launch-btn" id="launch-btn">Launch</button>
+        <button class="launch-btn" id="launch-btn">Start Reading</button>
         </div>
       </div>
 
   <div class="main-content">
     <div class="postcode-display">
-      <div class="postcode-label">Post Code</div>
-      <div class="postcode-value" id="postcode-value">---</div>
-      <div class="status-message" id="status-message">Click Launch to read post code</div>
+      <div class="postcode-label">Post Code Terminal</div>
+      <div class="postcode-terminal">
+        <ul class="postcode-list" id="postcode-list">
+          <li class="feed-Placeholder">Click "Start Reading" to begin scanning postcodes...</li>
+        </ul>
+        <div class="cursor" id="cursor" style="display: none;">_</div>
+      </div>
+      <div class="status-message" id="status-message">Ready to scan</div>
     </div>
   </div>
  </div> 
@@ -4500,40 +4562,116 @@ body {
   document.addEventListener('DOMContentLoaded', () => {
     const launchBtn = document.getElementById('launch-btn');
     const refreshBtn = document.getElementById('refresh-btn');
-    const postcodeValue = document.getElementById('postcode-value');
+    const postcodeList = document.getElementById('postcode-list');
     const statusMessage = document.getElementById('status-message');
+    const cursor = document.getElementById('cursor');
+    let isPolling = false;
+    let pollInterval;
 
     // LAUNCH BUTTON FUNCTIONALITY
     launchBtn.addEventListener('click', async () => {
-      launchBtn.disabled = true;
-      launchBtn.innerHTML = '<span class="loading"></span>Reading...';
-      statusMessage.textContent = 'Reading post code...';
-      postcodeValue.textContent = '---';
-
-      try {
-        const response = await fetch('http://100.109.50.57:5010/get_data', {
-          method: 'GET',
-        });
-
-        if (!response.ok) {
-          throw new Error("HTTP error! Status: " + response.status);
-        }
-
-        const data = await response.text(); // Assuming it returns raw text like 'SW1A 1AA'
-        postcodeValue.textContent = data || 'N/A';
-        statusMessage.textContent = 'Post code read successfully';
-      } catch (error) {
-        console.error('Error reading post code:', error);
-        postcodeValue.textContent = 'ERROR';
-        statusMessage.textContent = 'Failed to read post code';
-      } finally {
-        launchBtn.disabled = false;
-        launchBtn.textContent = 'Launch';
-      }
+      if (isPolling) return;
+      
+      startReading();
     });
+
+    function startReading() {
+      launchBtn.disabled = true;
+      launchBtn.innerHTML = '<span class="loading"></span>Starting...';
+      statusMessage.textContent = 'Initializing reading process...';
+      
+      // Clear previous results
+      postcodeList.innerHTML = '';
+      cursor.style.display = 'block';
+      
+      fetch('http://100.109.50.57:5010/get_data')
+        .then(response => response.json())
+        .then(data => {
+          statusMessage.textContent = 'Started reading...';
+          isPolling = true;
+          pollForUpdates();
+        })
+        .catch(error => {
+          console.error('Error starting reading:', error);
+          statusMessage.textContent = 'Failed to start reading process';
+          launchBtn.disabled = false;
+          launchBtn.textContent = 'Start Reading';
+          cursor.style.display = 'none';
+        });
+    }
+
+    function pollForUpdates() {
+      if (!isPolling) return;
+      
+      fetch('http://100.109.50.57:5010/poll_data')
+        .then(response => response.json())
+        .then(data => {
+          // Clear the list and add all postcodes
+          postcodeList.innerHTML = '';
+          
+          if (data.postcodes && data.postcodes.length > 0) {
+            data.postcodes.forEach((code, index) => {
+              const li = document.createElement('li');
+              li.className = 'postcode-item';
+              
+              if (data.status === "success" && index === data.postcodes.length - 1) {
+                // Final postcode - highlight it
+                li.className += ' final';
+                li.textContent = \`\${code} (FINAL)\`;
+              } else if (index === data.postcodes.length - 1) {
+                // Current/latest postcode
+                li.className += ' current';
+                li.textContent = \`> \${code}\`;
+              } else {
+                // Previous postcodes
+                li.textContent = \`  \${code}\`;
+              }
+              
+              postcodeList.appendChild(li);
+            });
+          }
+          
+          // Scroll to bottom to show latest
+          const terminal = document.querySelector('.postcode-terminal');
+          terminal.scrollTop = terminal.scrollHeight;
+          
+          if (data.status === "success") {
+            statusMessage.textContent = ' Done! Final postcode received.';
+            cursor.style.display = 'none';
+            isPolling = false;
+            launchBtn.disabled = false;
+            launchBtn.textContent = 'Start Reading';
+            
+            // Show success alert
+            showAlert('Reading completed successfully!', 'success');
+          } else {
+            statusMessage.textContent = \`Reading... (\${data.postcodes?.length || 0} postcodes found)\`;
+            // Continue polling
+            pollInterval = setTimeout(pollForUpdates, 1000);
+          }
+        })
+        .catch(error => {
+          console.error('Error polling data:', error);
+          statusMessage.textContent = 'Error occurred during reading';
+          cursor.style.display = 'none';
+          isPolling = false;
+          launchBtn.disabled = false;
+          launchBtn.textContent = 'Start Reading';
+          showAlert('Error occurred during reading', 'error');
+        });
+    }
 
     // REFRESH BUTTON FUNCTIONALITY
     refreshBtn.addEventListener('click', async () => {
+      // Stop polling if running
+      if (isPolling) {
+        isPolling = false;
+        clearTimeout(pollInterval);
+        launchBtn.disabled = false;
+        launchBtn.textContent = 'Start Reading';
+        cursor.style.display = 'none';
+      }
+      
       refreshBtn.disabled = true;
       refreshBtn.classList.add('loading');
 
@@ -4546,7 +4684,10 @@ body {
           throw new Error("HTTP error! Status: " + response.status);
         }
 
-        // Optionally show confirmation message
+        // Clear the terminal
+        postcodeList.innerHTML = '<li class="feed-Placeholder">Device reset. Click "Start Reading" to begin scanning...</li>';
+        statusMessage.textContent = 'Device reset successfully';
+        
         showAlert('Device power reset successfully.', 'success');
       } catch (error) {
         console.error('Error refreshing device:', error);
@@ -4569,6 +4710,12 @@ body {
         alertBox.remove();
       }, 4000);
     }
+
+    // Stop polling when page is unloaded
+    window.addEventListener('beforeunload', () => {
+      isPolling = false;
+      clearTimeout(pollInterval);
+    });
   });
 </script>
 

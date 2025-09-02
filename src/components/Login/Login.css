@@ -59,7 +59,6 @@ body {
   top: 50%;
   left: 14px;
   transform: translateY(-50%);
-  color: #000000;
   z-index: 2;
 }
 
