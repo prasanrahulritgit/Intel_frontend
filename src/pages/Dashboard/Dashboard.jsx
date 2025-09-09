@@ -3442,7 +3442,7 @@ resetBtn.addEventListener('click', async () => {
 </body>
 </html>`;
     } else if (isAudio) {
-      popupHTML = `<!DOCTYPE html>
+  popupHTML = `<!DOCTYPE html>
 <html>
 <head>
   <title>${title}</title>
@@ -3571,6 +3571,7 @@ resetBtn.addEventListener('click', async () => {
       border-radius: 8px;
       padding: 20px;
       margin-bottom: 10px;
+      width: 100%;
     }
 
     .audio-visualization canvas {
@@ -3598,10 +3599,11 @@ resetBtn.addEventListener('click', async () => {
 
     .time-display {
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-end;
       margin-top: 5px;
-      font-size: 12px;
-      color: #777;
+      font-weight: 500;
+      font-size: 14px;
+      color: #cfcfcfff;
     }
 
     .audio-controls {
@@ -3692,6 +3694,21 @@ resetBtn.addEventListener('click', async () => {
       cursor: not-allowed;
     }
 
+    .stream-container1 {
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .connection-status {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      font-size: 14px;
+      color: #f0f0f0ff;
+    }
+
   </style>
   <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
@@ -3700,7 +3717,7 @@ resetBtn.addEventListener('click', async () => {
 </head>
 
 <body>
- <div class="audio-container">
+<div class="audio-container">
   <div class="header">
     <div class="device-info">
       <div class="device-name-row">
@@ -3741,7 +3758,7 @@ const AudioStreamPage = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(1);
+  const [duration, setDuration] = useState(300); // 5 minutes default
   const [streamUrl, setStreamUrl] = useState("");
   const [connectionStatus, setConnectionStatus] = useState("Disconnected");
 
@@ -3749,11 +3766,52 @@ const AudioStreamPage = () => {
   const canvasRef = useRef(null);
   const animationRef = useRef(null);
   const progressRef = useRef(null);
+  const playIntervalRef = useRef(null);
 
   const formatTime = time => {
-    const minutes = Math.floor(time / 60);
+    const hours = Math.floor(time / 3600);
+    const minutes = Math.floor((time % 3600) / 60);
     const seconds = Math.floor(time % 60);
+    
+    if (hours > 0) {
+      return \`\${hours}:\${minutes < 10 ? '0' : ''}\${minutes}:\${seconds < 10 ? '0' : ''}\${seconds}\`;
+    }
     return \`\${minutes}:\${seconds < 10 ? '0' : ''}\${seconds}\`;
+  };
+
+  const startPlayback = () => {
+    // Start playback timer
+    playIntervalRef.current = setInterval(() => {
+      setCurrentTime(prevTime => {
+        if (prevTime >= duration) {
+          clearInterval(playIntervalRef.current);
+          setIsPlaying(false);
+          return duration;
+        }
+        return prevTime + 1;
+      });
+    }, 1000);
+    
+    // Start visualization animation
+    simulateAudioData();
+    
+    if (audioRef.current) {
+      audioRef.current.play().catch(e => console.error("Play error:", e));
+    }
+    
+    setIsPlaying(true);
+  };
+
+  const stopPlayback = () => {
+    // Stop playback timer
+    clearInterval(playIntervalRef.current);
+    cancelAnimationFrame(animationRef.current);
+    
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+    
+    setIsPlaying(false);
   };
 
   const handleConnect = async () => {
@@ -3768,7 +3826,7 @@ const AudioStreamPage = () => {
     try {
       let apiUrl;
       if (selected === "HDMI") {
-        apiUrl = "http://100.68.107.103:7123/audio";
+        apiUrl = "http://100.113.17.55:7123/audio";
       } else if (selected === "Bluetooth") {
         apiUrl = "YOUR_BLUETOOTH_ENDPOINT";
       }
@@ -3781,17 +3839,13 @@ const AudioStreamPage = () => {
       setIsConnected(true);
       setConnectionStatus("Connected");
 
-      // Auto-play after short delay
+      // Auto-start playback after short delay
       setTimeout(() => {
-        setIsPlaying(true);
         if (audioRef.current) {
           audioRef.current.src = apiUrl;
           audioRef.current.volume = volume / 100;
-          audioRef.current.play().catch(e => {
-            console.error("Audio play failed:", e);
-            setConnectionStatus("Playback Error");
-          });
         }
+        startPlayback();
       }, 500);
 
     } catch (error) {
@@ -3802,30 +3856,52 @@ const AudioStreamPage = () => {
   };
 
   const handlePlayPause = () => {
-    if (!audioRef.current) return;
+    if (!isConnected) return;
+    
     if (isPlaying) {
-      audioRef.current.pause();
+      stopPlayback();
     } else {
-      audioRef.current.play().catch(e => console.error("Play error:", e));
+      startPlayback();
     }
-    setIsPlaying(!isPlaying);
   };
 
   const handleVolumeChange = (e) => {
-    const newVolume = e.target.value;
+    const newVolume = parseInt(e.target.value);
     setVolume(newVolume);
     if (audioRef.current) {
       audioRef.current.volume = newVolume / 100;
-      setIsMuted(newVolume == 0);
+      setIsMuted(newVolume === 0);
     }
     setTimeout(() => setShowVolumeSlider(false), 5000);
   };
 
   const handleProgressClick = (e) => {
-    if (!audioRef.current) return;
+    if (!isConnected) return;
+    
     const rect = progressRef.current.getBoundingClientRect();
-    const pos = (e.clientX - rect.left) / rect.width;
-    audioRef.current.currentTime = pos * duration;
+    const clickPosition = (e.clientX - rect.left) / rect.width;
+    const newTime = clickPosition * duration;
+    
+    setCurrentTime(newTime);
+    
+    // If we were playing, reset the interval
+    if (isPlaying) {
+      clearInterval(playIntervalRef.current);
+      playIntervalRef.current = setInterval(() => {
+        setCurrentTime(prevTime => {
+          if (prevTime >= duration) {
+            clearInterval(playIntervalRef.current);
+            setIsPlaying(false);
+            return duration;
+          }
+          return prevTime + 1;
+        });
+      }, 1000);
+    }
+    
+    if (audioRef.current) {
+      audioRef.current.currentTime = newTime;
+    }
   };
 
   const simulateAudioData = () => {
@@ -3857,6 +3933,7 @@ const AudioStreamPage = () => {
   };
 
   useEffect(() => {
+    // Start or stop visualization based on play state
     if (isPlaying) {
       simulateAudioData();
     } else {
@@ -3867,46 +3944,28 @@ const AudioStreamPage = () => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
       }
     }
+    
     return () => cancelAnimationFrame(animationRef.current);
-  }, [isPlaying]);
+  }, [isPlaying, currentTime]);
 
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const updateTime = () => setCurrentTime(audio.currentTime || 0);
-    const updateDuration = () => setDuration(audio.duration || 1);
-
-    audio.addEventListener('timeupdate', updateTime);
-    audio.addEventListener('loadedmetadata', updateDuration);
-
+    // Set canvas width based on container
+    const resizeCanvas = () => {
+      const canvas = canvasRef.current;
+      if (canvas) {
+        canvas.width = canvas.offsetWidth;
+      }
+    };
+    
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    
     return () => {
-      audio.removeEventListener('timeupdate', updateTime);
-      audio.removeEventListener('loadedmetadata', updateDuration);
+      window.removeEventListener('resize', resizeCanvas);
+      clearInterval(playIntervalRef.current);
+      cancelAnimationFrame(animationRef.current);
     };
   }, []);
-
-    useEffect(() => {
-    const canvas = canvasRef.current;
-    if (canvas) {
-      // Ensure canvas width is set based on rendered DOM
-      canvas.width = canvas.offsetWidth || 600;
-    }
-    }, []);
-
-    useEffect(() => {
-    if (!isPlaying) return;
-
-    const interval = setInterval(() => {
-      setCurrentTime(prev => {
-        const next = prev + 0.5;
-        return next < duration ? next : duration;
-      });
-    }, 500);
-
-    return () => clearInterval(interval);
-  }, [isPlaying, duration]);
-
 
   return (
     <div className="stream-container1">
@@ -3929,10 +3988,10 @@ const AudioStreamPage = () => {
 
           <div className="progress-container" ref={progressRef} onClick={handleProgressClick}>
             <div className="progress-bar" style={{ width: \`\${(currentTime / duration) * 100}%\` }}></div>
-            <div className="time-display">
-              <span>{formatTime(currentTime)}</span>
-              <span>{formatTime(duration)}</span>
-            </div>
+          </div>
+          
+          <div className="time-display">
+            <span>{formatTime(currentTime)}</span>
           </div>
 
           <div className="audio-controls">
@@ -4000,7 +4059,7 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>`;
-    } else if (isSystemInfo || isUsbSharing || isFirmware) {
+} else if (isSystemInfo || isUsbSharing || isFirmware) {
       let deviceIp = device.ipAddress.split("/")[0];
       let iframeURL = "";
 
