@@ -204,6 +204,11 @@ const Dashboard = () => {
                   endpoint: "post_code",
                   icon: "CodeIcon",
                 },
+                {
+                  name: "APC Power Control",
+                  endpoint: "apc",
+                  icon: "CpuIcon",
+                }
               ];
 
               subDrivers.forEach((driver) => {
@@ -421,6 +426,7 @@ const Dashboard = () => {
     const isUsbSharing = device.name.includes("USB");
     const isStream1 = device.name.includes("Stream 1");
     const isStream2 = device.name.includes("Stream 2");
+    const isApc = device.name.includes("APC");
 
     // Timer script that will receive updates from parent window
     const timerScript = `
@@ -1993,7 +1999,7 @@ resetBtn.addEventListener('click', async () => {
 </body>
 </html>`;
     } else if (isPC) {
-      const ip_add = "100.109.50.57";
+      const ip_add = '100.109.50.57';
       popupHTML = `<!DOCTYPE html>
   <html>
   <head>
@@ -2611,8 +2617,6 @@ resetBtn.addEventListener('click', async () => {
         if (!action) return; // ignore if nothing selected
         
         console.log('Sending shortcut:', action);
-        
-        fetch(\`http://100.109.50.57:5000/shortcut/\${action}\`, { 
 
         fetch(\`http://100.109.50.57:5000/shortcut/\${action}\`, {
           method: "POST",
@@ -4061,7 +4065,7 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>`;
-    } else if (isSystemInfo || isUsbSharing || isFirmware) {
+    } else if (isSystemInfo || isUsbSharing || isFirmware || isApc) {
       let deviceIp = device.ipAddress.split("/")[0];
       let iframeURL = "";
 
@@ -4071,7 +4075,10 @@ document.addEventListener('DOMContentLoaded', () => {
         iframeURL = `http://100.112.10.66:8081/`;
       } else if (isFirmware) {
         iframeURL = `http://${deviceIp}:5003/`;
+      } else if (isApc) {
+        iframeURL = `http://${deviceIp}:5050/`;
       }
+
       popupHTML = `<!DOCTYPE html>
 <html>
 <head>
