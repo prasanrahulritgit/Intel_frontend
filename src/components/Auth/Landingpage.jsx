@@ -28,6 +28,7 @@ import view1 from "../../assets/images/Top1.png";
 import view2 from "../../assets/images/Fan1.png";
 import view3 from "../../assets/images/Ports1.png";
 import view5 from "../../assets/images/Sideview1.png";
+import server from "../../assets/new_server.jpeg";
 
 const Landingpage = ({ setIsAuthenticated }) => {
   const [activeSection, setActiveSection] = useState("hero");
@@ -41,7 +42,7 @@ const Landingpage = ({ setIsAuthenticated }) => {
   const [dragHintVisible, setDragHintVisible] = useState(true);
   const featureSlides = [
     {
-      title: "4K Video Streaming",
+      title: "Virtual Desk",
       description:
         "Experience crystal-clear video with our advanced streaming technology.",
       image: sl1,
@@ -53,7 +54,7 @@ const Landingpage = ({ setIsAuthenticated }) => {
       image: sl2,
     },
     {
-      title: "Integrated Oscilloscope",
+      title: "Rutoscope",
       description:
         "Built-in digital oscilloscope for signal monitoring and measurement",
       image: sl3,
@@ -65,9 +66,9 @@ const Landingpage = ({ setIsAuthenticated }) => {
       image: sl4,
     },
     {
-      title: "USB Over Network",
+      title: "Rutocam",
       description:
-        "Seamless USB device sharing across networked systems with full functionality.",
+        "Real-time thermal imaging with precision sensors for diagnostics, safety, monitoring, and seamless Rutomatrix integration.",
       image: sl5,
     },
   ];
@@ -141,7 +142,7 @@ const Landingpage = ({ setIsAuthenticated }) => {
       window.removeEventListener("touchstart", handleInteraction);
     };
   }, [show3DModel]);
-  
+
   const navigate = useNavigate();
 
   const handleLaunchDashboard = () => {
@@ -296,6 +297,74 @@ const Landingpage = ({ setIsAuthenticated }) => {
       document.body.style.overflow = "auto";
     }
   }, [showLoginOverlay]);
+
+   const [showContactForm, setShowContactForm] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    mobile: "",
+    company: "",
+    position: "",
+    location: "",
+    message: "",
+  });
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSending(true);
+
+    try {
+      // Send email using EmailJS or your backend API
+      await sendEmail(formData);
+
+      // Show success message
+      setIsSubmitted(true);
+
+      // Reset after 4 seconds
+      setTimeout(() => {
+        setIsSubmitted(false);
+        setShowContactForm(false);
+        setFormData({
+          name: "",
+          email: "",
+          mobile: "",
+          company: "",
+          position: "",
+          location: "",
+          message: "",
+        });
+      }, 9000);
+    } catch (error) {
+      console.error("Error sending email:", error);
+      alert("Failed to send message. Please try again.");
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const sendEmail = async (data) => {
+    const response = await fetch("http://localhost:5000/send-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to send email");
+    }
+
+    return await response.json();
+  };
 
   return (
     <div className="app">
@@ -489,7 +558,7 @@ const Landingpage = ({ setIsAuthenticated }) => {
           <div className="features-grid">
             <div className="feature-card">
               <div className="feature-icon">🎥</div>
-              <h3>4K Video Streaming</h3>
+              <h3>Virtual Desk</h3>
               <p>
                 Ultra-high-definition streaming with low latency and adaptive
                 bitrate technology.
@@ -507,19 +576,22 @@ const Landingpage = ({ setIsAuthenticated }) => {
 
             <div className="feature-card">
               <div className="feature-icon">📈</div>
-              <h3>Integrated Oscilloscope</h3>
+              <h3>Rutoscope</h3>
               <p>
-                Built-in oscilloscope with logic analyzer and waveform generator
-                replacing traditional lab tools.
+                Rutoscope is a powerful logic analyzer for modern digital
+                systems. Supports all major protocols with deep visibility and
+                precision. Monitor, decode, and analyze communication
+                seamlessly.
               </p>
             </div>
 
             <div className="feature-card">
-              <div className="feature-icon">🔗</div>
-              <h3>USB Over Network</h3>
+              <div className="feature-icon">📷</div>
+              <h3>Rutocam</h3>
               <p>
-                Seamless USB device sharing across networked systems with full
-                functionality.
+                Real-time thermal imaging with precision sensors—detect heat
+                signatures for diagnostics, safety, and monitoring, seamlessly
+                integrated with Rutomatrix.
               </p>
             </div>
 
@@ -603,7 +675,7 @@ const Landingpage = ({ setIsAuthenticated }) => {
             Advantages of remote server management
           </h2>
           <p className="section-subtitle">
-            Discover why RutoMatrix stands out from the competition with these
+            Discover why Rutomatrix stands out from the competition with these
             core benefits
           </p>
 
@@ -665,7 +737,7 @@ const Landingpage = ({ setIsAuthenticated }) => {
         <div className="container">
           <h2 className="section-title">In Action</h2>
           <p className="section-description">
-            See how RutoMatrix performs in real-world scenarios
+            See how Rutomatrix performs in real-world scenarios
           </p>
 
           {/* First Showcase Item - Image Left */}
@@ -676,7 +748,7 @@ const Landingpage = ({ setIsAuthenticated }) => {
             <div className="showcase-content">
               <h3>Precision Engineering</h3>
               <p>
-                Every RutoMatrix unit undergoes quality testing to ensure
+                Every Rutomatrix unit undergoes quality testing to ensure
                 reliability in demanding environments. Our precision
                 manufacturing guarantees consistent performance.
               </p>
@@ -693,7 +765,7 @@ const Landingpage = ({ setIsAuthenticated }) => {
             <div className="showcase-content">
               <h3>Robust Software & Hardware Integration</h3>
               <p>
-                RutoMatrix offers seamless integration between hardware and
+                Rutomatrix offers seamless integration between hardware and
                 software, ensuring efficient development, deployment, and
                 diagnostics across critical interfaces.
               </p>
@@ -719,12 +791,12 @@ const Landingpage = ({ setIsAuthenticated }) => {
           {/* Third Showcase Item - Image Left */}
           <div className="showcase-item left-layout">
             <div className="showcase-image">
-              <img src={view3} alt="RutoMatrix Connectivity Options" />
+              <img src={view3} alt="Rutomatrix Connectivity Options" />
             </div>
             <div className="showcase-content">
               <h3>Comprehensive Connectivity</h3>
               <p>
-                With multiple interface options, RutoMatrix seamlessly
+                With multiple interface options, Rutomatrix seamlessly
                 integrates with your existing infrastructure. The rear panel
                 provides easy access to all connections.
               </p>
@@ -741,7 +813,7 @@ const Landingpage = ({ setIsAuthenticated }) => {
             <div className="showcase-content">
               <h3>Precision I/O & Thermal Design</h3>
               <p>
-                RutoMatrix is engineered with versatile I/O options and
+                Rutomatrix is engineered with versatile I/O options and
                 efficient thermal solutions, ensuring reliable performance
                 across diverse applications and environments.
               </p>
@@ -755,28 +827,178 @@ const Landingpage = ({ setIsAuthenticated }) => {
             </div>
 
             <div className="showcase-image">
-              <img src={view5} alt="RutoMatrix Internal Components" />
+              <img src={view5} alt="Rutomatrix Internal Components" />
             </div>
           </div>
         </div>
       </section>
 
-      {/* Contact Section */}
+       {/* Contact Section */}
       <section id="contact" className="contact-section">
         <div className="container">
-          <div className="contact-content">
-            <h2>Ready to Transform Your Workflow?</h2>
-            <p>
-              Contact our team to discuss how RutoMatrix can meet your specific
-              requirements.
-            </p>
-            <button
-              className="contact-btn"
-              onClick={() => scrollToSection("hero")}
-            >
-              Contact us <ArrowRight color="#ffffff" />
-            </button>
-          </div>
+          {!showContactForm ? (
+            <div className="contact-default">
+              <div className="contact-content-left">
+                <h2>Ready to Transform Your Workflow?</h2>
+                <p>
+                  Contact our team to discuss how Rutomatrix can meet your
+                  specific requirements.
+                </p>
+                <button
+                  className="contact-btn"
+                  onClick={() => setShowContactForm(true)}
+                >
+                  Contact us <ArrowRight color="#ffffff" />
+                </button>
+              </div>
+              <div className="contact-image-right">
+                <img
+                  src={server}
+                  alt="Server Infrastructure"
+                  className="server-image"
+                />
+              </div>
+            </div>
+          ) : isSubmitted ? (
+            <div className="success-animation">
+              <svg
+                className="checkmark"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 52 52"
+              >
+                <circle
+                  className="checkmark-circle"
+                  cx="26"
+                  cy="26"
+                  r="25"
+                  fill="none"
+                />
+                <path
+                  className="checkmark-check"
+                  fill="none"
+                  d="M14.1 27.2l7.1 7.2 16.7-16.8"
+                />
+              </svg>
+              <h2 className="success-message">
+                Your Response Sent Successfully!
+              </h2>
+              <p className="para">We'll get back to you within 24 hours.</p>
+            </div>
+          ) : (
+            <div className="contact-form-container">
+              <button
+                className="Contact_close-btn"
+                onClick={() => setShowContactForm(false)}
+              >
+                <X size={24} />
+              </button>
+
+              <div className="contact-form-content">
+                <h2>Reach out</h2>
+                <p className="form-subtitle">We’re always happy to help.</p>
+
+                <form onSubmit={handleSubmit} className="contact-form">
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label htmlFor="name">Your Name*</label>
+                      <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="email">Your Email*</label>
+                      <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label htmlFor="mobile">Your Mobile*</label>
+                      <input
+                        type="tel"
+                        id="mobile"
+                        name="mobile"
+                        value={formData.mobile}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="company">Company Name*</label>
+                      <input
+                        type="text"
+                        id="company"
+                        name="company"
+                        value={formData.company}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label htmlFor="position">Job Title/Position*</label>
+                      <input
+                        type="text"
+                        id="position"
+                        name="position"
+                        value={formData.position}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="location">Location*</label>
+                      <input
+                        type="text"
+                        id="location"
+                        name="location"
+                        value={formData.location}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group full-width">
+                    <label htmlFor="message">Message</label>
+                    <textarea
+                      id="message"
+                      name="message"
+                      rows="4"
+                      value={formData.message}
+                      onChange={handleInputChange}
+                      placeholder="Your Message"
+                    ></textarea>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className={`submit-btn ${isSending ? "sending" : ""}`}
+                    disabled={isSending}
+                  >
+                    {isSending ? "Sending..." : "Submit"}
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
@@ -785,7 +1007,11 @@ const Landingpage = ({ setIsAuthenticated }) => {
         <div className="container">
           <div className="footer-content">
             <div className="footer-logo"> </div>
-            <img src={tes_logo} className="footer-logo-img" alt="Tessolve Logo" />
+            <img
+              src={tes_logo}
+              className="footer-logo-img"
+              alt="Tessolve Logo"
+            />
           </div>
           <div className="footer-links">
             <h4>Product Engineering Services</h4>
