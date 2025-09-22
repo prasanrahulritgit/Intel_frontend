@@ -1089,16 +1089,16 @@ const Dashboard = () => {
 <script>
     document.addEventListener('DOMContentLoaded', () => {
       // API Endpoints
-      const startCameraAPI = "http://100.124.235.42:8000/start-camera";
-      const stopCameraAPI = "http://100.124.235.42:8000/stop-camera";
-      const startThermalAPI = "http://100.124.235.42:8000/start-thermal";
-      const stopThermalAPI = "http://100.124.235.42:8000/stop-thermal";
-      const cameraFeedAPI = "http://100.124.235.42:8001/camera.mjpg";
-      const thermalFeedAPI = "http://100.124.235.42:8002/thermal";
-      const cameraVerifiedAPI = "http://100.124.235.42:8001/camera_verified";
-      const thermalVerifiedAPI = "http://100.124.235.42:8002/thermal_verified";
-      const startServoAPI = "http://100.124.235.42:8000/start-servo";
-      const stopServoAPI = "http://100.124.235.42:8000/stop-servo";
+      const startCameraAPI = "http://100.113.17.55:8000/start-camera";
+      const stopCameraAPI = "http://100.113.17.55:8000/stop-camera";
+      const startThermalAPI = "http://100.113.17.55:8000/start-thermal";
+      const stopThermalAPI = "http://100.113.17.55:8000/stop-thermal";
+      const cameraFeedAPI = "http://100.113.17.55:8001/camera.mjpg";
+      const thermalFeedAPI = "http://100.113.17.55:8002/thermal";
+      const cameraVerifiedAPI = "http://100.113.17.55:8001/camera_verified";
+      const thermalVerifiedAPI = "http://100.113.17.55:8002/thermal_verified";
+      const startServoAPI = "http://100.113.17.55:8000/start-servo";
+      const stopServoAPI = "http://100.113.17.55:8000/stop-servo";
       const panel = document.getElementById('servo-panel');
       const angleDisplay = document.getElementById('angle-display');
 
@@ -1474,7 +1474,7 @@ resetBtn.addEventListener('click', async () => {
       
     
     //Servo Control Script
-    const SERVER = "http://100.124.235.42:8003";  //RPi backend URL
+    const SERVER = "http://100.113.17.55:8003";  //RPi backend URL
 
     let servoRunning = false;  // Track state
 
