@@ -298,7 +298,7 @@ const Landingpage = ({ setIsAuthenticated }) => {
     }
   }, [showLoginOverlay]);
 
-   const [showContactForm, setShowContactForm] = useState(false);
+  const [showContactForm, setShowContactForm] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -833,7 +833,7 @@ const Landingpage = ({ setIsAuthenticated }) => {
         </div>
       </section>
 
-       {/* Contact Section */}
+      {/* Contact Section */}
       <section id="contact" className="contact-section">
         <div className="container">
           {!showContactForm ? (
