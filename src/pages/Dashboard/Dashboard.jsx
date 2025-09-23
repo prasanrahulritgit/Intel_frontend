@@ -3448,7 +3448,7 @@ resetBtn.addEventListener('click', async () => {
 </body>
 </html>`;
     } else if (isAudio) {
-  popupHTML = `<!DOCTYPE html>
+      popupHTML = `<!DOCTYPE html>
 <html>
 <head>
   <title>${title}</title>
