@@ -42,7 +42,11 @@ const Navbar = ({ isDarkTheme, toggleTheme, userData }) => {
       console.log("Local storage:", localStorage);
 
       const response = await axios.get(
+<<<<<<< HEAD
         "http://13.62.110.122:5000/api/booked-devices",
+=======
+        "http://127.0.0.1:5000/api/booked-devices",
+>>>>>>> 29628ee16e1bc485e2cf605125ec0ce4514a768f
         {
           withCredentials: true,
           headers: {
