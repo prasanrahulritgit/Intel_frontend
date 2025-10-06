@@ -2007,7 +2007,7 @@ resetBtn.addEventListener('click', async () => {
 </body>
 </html>`;
     } else if (isPC) {
-      const ip_add = '100.109.50.57';
+      const ip_add = "100.109.50.57";
       popupHTML = `<!DOCTYPE html>
   <html>
   <head>
@@ -3456,7 +3456,7 @@ resetBtn.addEventListener('click', async () => {
 </body>
 </html>`;
     } else if (isAudio) {
-  popupHTML = `<!DOCTYPE html>
+      popupHTML = `<!DOCTYPE html>
 <html>
 <head>
   <title>${title}</title>
@@ -4217,7 +4217,7 @@ document.addEventListener('DOMContentLoaded', () => {
 </body>
 </html>`;
     } else if (isPostcode) {
-popupHTML = `<!DOCTYPE html>
+      popupHTML = `<!DOCTYPE html>
   <html>
   <head>
   <title>${title}</title>
