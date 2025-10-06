@@ -19,6 +19,8 @@ import {
   Volume2Icon,
   VideoIcon,
   CodeIcon,
+  FileCode,
+  Cable
 } from "lucide-react";
 
 const DeviceCard = ({ device, isActive, onClick, renderIcon, isDarkTheme }) => {
@@ -207,7 +209,12 @@ const Dashboard = () => {
                 {
                   name: "APC Power Control",
                   endpoint: "apc",
-                  icon: "CpuIcon",
+                  icon: "Cable",
+                },
+                {
+                  name: "Bios Log Monitor",
+                  endpoint: "bios",
+                  icon: "FileCode",
                 }
               ];
 
@@ -427,6 +434,7 @@ const Dashboard = () => {
     const isStream1 = device.name.includes("Stream 1");
     const isStream2 = device.name.includes("Stream 2");
     const isApc = device.name.includes("APC");
+    const isBios = device.name.includes("Bios");
 
     // Timer script that will receive updates from parent window
     const timerScript = `
@@ -1549,10 +1557,10 @@ resetBtn.addEventListener('click', async () => {
         } else if (direction === 'down') {
           verticalAngle = Math.min(maxAngle, verticalAngle + step);
           sendServoCommand('vertical', verticalAngle);
-        } else if (direction === 'left') {
+        } else if (direction === 'right') {
           horizontalAngle = Math.max(minAngle, horizontalAngle - step);
           sendServoCommand('horizontal', horizontalAngle);
-        } else if (direction === 'right') {
+        } else if (direction === 'left') {
           horizontalAngle = Math.min(maxAngle, horizontalAngle + step);
           sendServoCommand('horizontal', horizontalAngle);
         } else if (direction === 'center') {
@@ -4065,7 +4073,7 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>`;
-    } else if (isSystemInfo || isUsbSharing || isFirmware || isApc) {
+    } else if (isSystemInfo || isUsbSharing || isFirmware || isApc || isBios) {
       let deviceIp = device.ipAddress.split("/")[0];
       let iframeURL = "";
 
@@ -4077,6 +4085,8 @@ document.addEventListener('DOMContentLoaded', () => {
         iframeURL = `http://${deviceIp}:5003/`;
       } else if (isApc) {
         iframeURL = `http://${deviceIp}:5050/`;
+      } else if (isBios) {
+        iframeURL = `http://${deviceIp}:1848/`;
       }
 
       popupHTML = `<!DOCTYPE html>
@@ -4545,9 +4555,7 @@ body {
         </div>
         <div class="controls">
         <button class="refresh-btn" id="refresh-btn">
-          <svg viewBox="0 0 24 24" width="16" height="16">
-            <path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" fill="currentColor"/>
-          </svg>
+          Reset
         </button>
         <button class="launch-btn" id="launch-btn">Start Reading</button>
         </div>
@@ -4951,6 +4959,10 @@ body {
                         return <VideoIcon size={32} color={color} />;
                       case "CodeIcon":
                         return <CodeIcon size={32} color={color} />;
+                      case "FileCode":
+                        return <FileCode size={32} color={color} />;
+                      case "Cable":
+                        return <Cable size={32} color={color} />;
                       default:
                         return <MonitorSmartphone size={32} color={color} />;
                     }
