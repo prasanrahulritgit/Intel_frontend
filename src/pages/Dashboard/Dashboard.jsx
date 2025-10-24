@@ -20,7 +20,8 @@ import {
   VideoIcon,
   CodeIcon,
   FileCode,
-  Cable
+  Cable,
+  Power,
 } from "lucide-react";
 
 const DeviceCard = ({ device, isActive, onClick, renderIcon, isDarkTheme }) => {
@@ -109,6 +110,8 @@ const Dashboard = () => {
     stream2_ip: { name: "Stream 2", iconType: "VideoIcon" },
     postcode_ip: { name: "Post Code Reading", iconType: "CodeIcon" },
     rutomatrix_ip: { name: "Rutomatrix", iconType: "MonitorSmartphone" },
+    pdu_ip: { name: "PDU", iconType: "Power" }
+
   };
 
   const [userData, setUserData] = useState({
@@ -215,6 +218,11 @@ const Dashboard = () => {
                   name: "Bios Log Monitor",
                   endpoint: "bios",
                   icon: "FileCode",
+                },
+                {
+                  name: "PDU",
+                  endpoint: "pdu",
+                  icon: "Power"
                 }
               ];
 
@@ -435,6 +443,7 @@ const Dashboard = () => {
     const isStream2 = device.name.includes("Stream 2");
     const isApc = device.name.includes("APC");
     const isBios = device.name.includes("Bios");
+    const isPdu = device.name.includes("PDU");
 
     // Timer script that will receive updates from parent window
     const timerScript = `
@@ -3840,7 +3849,7 @@ const AudioStreamPage = () => {
     try {
       let apiUrl;
       if (selected === "HDMI") {
-        apiUrl = "http://100.78.188.92:7123/audio";
+        apiUrl = "http://100.78.188.92:7125/audio";
       } else if (selected === "Bluetooth") {
         apiUrl = "YOUR_BLUETOOTH_ENDPOINT";
       }
@@ -4073,7 +4082,7 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>`;
-    } else if (isSystemInfo || isUsbSharing || isFirmware || isApc || isBios) {
+    } else if (isSystemInfo || isUsbSharing || isFirmware || isApc || isBios || isPdu) {
       let deviceIp = device.ipAddress.split("/")[0];
       let iframeURL = "";
 
@@ -4087,6 +4096,8 @@ document.addEventListener('DOMContentLoaded', () => {
         iframeURL = `http://${deviceIp}:5050/`;
       } else if (isBios) {
         iframeURL = `http://${deviceIp}:1848/`;
+      } else if (isPdu) {
+        iframeURL = `http://100.68.91.58:5000/`;
       }
 
       popupHTML = `<!DOCTYPE html>
@@ -4963,6 +4974,8 @@ body {
                         return <FileCode size={32} color={color} />;
                       case "Cable":
                         return <Cable size={32} color={color} />;
+                      case "Power":
+                        return <Power size={32} color={color} />;
                       default:
                         return <MonitorSmartphone size={32} color={color} />;
                     }
